@@ -13,22 +13,26 @@ import { format, subYears, isSameDay, isSameMonth } from 'date-fns';
 
 export default function RewindPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [rewindText, setRewindText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const entries = useLiveQuery(() => db.entries.orderBy('createdAt').reverse().toArray(), []);
 
-  // Filter entries for selected year
-  const yearEntries = useMemo(() => {
+  // Filter entries for selected year and month
+  const periodEntries = useMemo(() => {
     if (!entries) return [];
-    return entries.filter(e => new Date(e.createdAt).getFullYear() === selectedYear);
-  }, [entries, selectedYear]);
+    return entries.filter(e => {
+      const d = new Date(e.createdAt);
+      return d.getFullYear() === selectedYear && (selectedMonth === -1 || d.getMonth() === selectedMonth);
+    });
+  }, [entries, selectedYear, selectedMonth]);
 
   // High intensity memories (intensity >= 7)
   const memories = useMemo(() => {
-    return yearEntries.filter(e => e.isHighIntensity || (e.overallIntensity && e.overallIntensity >= 7));
-  }, [yearEntries]);
+    return periodEntries.filter(e => e.isHighIntensity || (e.overallIntensity && e.overallIntensity >= 7));
+  }, [periodEntries]);
 
   // Anniversaries: entries from today's date in previous years
   const anniversaries = useMemo(() => {
@@ -51,8 +55,8 @@ export default function RewindPage() {
   }, [entries]);
 
   // Stats
-  const avgMood = yearEntries.length > 0
-    ? (yearEntries.reduce((s, e) => s + e.mood, 0) / yearEntries.length).toFixed(1)
+  const avgMood = periodEntries.length > 0
+    ? (periodEntries.reduce((s, e) => s + e.mood, 0) / periodEntries.length).toFixed(1)
     : '0';
 
   const generateRewind = async () => {
@@ -63,7 +67,7 @@ export default function RewindPage() {
     setLoading(true);
     setError('');
     try {
-      const prompt = buildRewindPrompt(yearEntries, selectedYear);
+      const prompt = buildRewindPrompt(periodEntries, selectedYear);
       const result = await callLLM(prompt);
       setRewindText(result);
     } catch (err) {
@@ -111,19 +115,30 @@ export default function RewindPage() {
           </motion.div>
         )}
 
-        {/* Year Selector */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          {availableYears.map(y => (
-            <button key={y} onClick={() => setSelectedYear(y)} className={selectedYear === y ? 'tag tag-pink' : 'tag'} style={{ cursor: 'pointer', border: 'none', fontSize: 13, fontWeight: 600 }}>
-              {y}
-            </button>
-          ))}
+        {/* Time Selector */}
+        <div style={{ display: 'flex', gap: 16, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {availableYears.map(y => (
+              <button key={y} onClick={() => setSelectedYear(y)} className={selectedYear === y ? 'tag tag-pink' : 'tag'} style={{ cursor: 'pointer', border: 'none', fontSize: 13, fontWeight: 600 }}>
+                {y}
+              </button>
+            ))}
+          </div>
+          <div style={{ width: 1, height: 24, background: 'var(--neutral-200)' }} />
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
+            <button onClick={() => setSelectedMonth(-1)} className={selectedMonth === -1 ? 'tag tag-pink' : 'tag'} style={{ cursor: 'pointer', border: 'none', fontSize: 12 }}>All Year</button>
+            {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+              <button key={m} onClick={() => setSelectedMonth(i)} className={selectedMonth === i ? 'tag tag-pink' : 'tag'} style={{ cursor: 'pointer', border: 'none', fontSize: 12 }}>
+                {m}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Year Stats */}
+        {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 10, marginBottom: 20 }}>
           {[
-            { label: 'Entries', value: yearEntries.length, color: 'var(--pink-300)' },
+            { label: 'Entries', value: periodEntries.length, color: 'var(--pink-300)' },
             { label: 'Memories', value: memories.length, color: 'var(--lavender-400)' },
             { label: 'Avg Mood', value: avgMood, color: 'var(--gold-300)' },
           ].map(stat => (
@@ -167,11 +182,11 @@ export default function RewindPage() {
           ) : (
             <div style={{ textAlign: 'center', padding: 20 }}>
               <p style={{ fontSize: 13, color: 'var(--neutral-400)', marginBottom: 16 }}>
-                Generate a beautiful AI-narrated summary of your {selectedYear} emotional journey.
+                Generate a beautiful AI-narrated summary of your emotional journey for this period.
               </p>
               {error && <p style={{ fontSize: 12, color: 'var(--pink-500)', marginBottom: 12 }}>{error}</p>}
-              <button className="btn-primary" onClick={generateRewind} disabled={loading || yearEntries.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 auto', opacity: loading ? 0.7 : 1 }}>
-                {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</> : <><Sparkles size={16} /> Generate {selectedYear} Rewind</>}
+              <button className="btn-primary" onClick={generateRewind} disabled={loading || periodEntries.length === 0} style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 auto', opacity: loading ? 0.7 : 1 }}>
+                {loading ? <><Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> Generating...</> : <><Sparkles size={16} /> Generate Rewind</>}
               </button>
             </div>
           )}

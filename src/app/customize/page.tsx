@@ -49,11 +49,7 @@ export default function CustomizePage() {
   }, []);
 
   const applyTheme = (themeId: string) => {
-    const theme = THEME_OPTIONS.find(t => t.id === themeId);
-    if (!theme) return;
-    document.documentElement.style.setProperty('--cream-50', theme.bg);
-    document.documentElement.style.setProperty('--pink-300', theme.accent);
-    document.documentElement.style.setProperty('--glass-bg', theme.card);
+    document.documentElement.setAttribute('data-theme', themeId);
   };
 
   const handleSave = async () => {
@@ -61,6 +57,7 @@ export default function CustomizePage() {
     await setThemePref('color_theme', selectedTheme);
     await setThemePref('ambient_sound', selectedAmbient);
     applyTheme(selectedTheme);
+    window.dispatchEvent(new CustomEvent('ambientChange', { detail: selectedAmbient }));
     const fontOpt = FONT_OPTIONS.find(f => f.id === selectedFont);
     if (fontOpt) {
       document.documentElement.style.setProperty('--font-journal', fontOpt.family);

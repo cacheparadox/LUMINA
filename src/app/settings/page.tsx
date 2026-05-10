@@ -6,7 +6,8 @@ import { db, getSetting, setSetting } from '@/lib/db';
 import { getAIConfig, saveAIConfig } from '@/lib/ai';
 import { requestNotificationPermission } from '@/lib/notifications';
 import AppShell from '@/components/AppShell';
-import { Settings as SettingsIcon, Key, Cpu, Download, Trash2, Shield, Lock, Bell, Palette } from 'lucide-react';
+import PinLock from '@/components/PinLock';
+import { Settings as SettingsIcon, Key, Cpu, Download, Upload, Trash2, Shield, Lock, Palette, RefreshCw } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function SettingsPage() {
@@ -16,7 +17,9 @@ export default function SettingsPage() {
   const [saved, setSaved] = useState(false);
   const [entryCount, setEntryCount] = useState(0);
   const [pinEnabled, setPinEnabled] = useState(false);
+  const [showPinSetup, setShowPinSetup] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
+  const [autoBackup, setAutoBackup] = useState(false);
 
   useEffect(() => {
     const config = getAIConfig();
@@ -26,6 +29,7 @@ export default function SettingsPage() {
     }
     db.entries.count().then(setEntryCount);
     getSetting('pin_enabled').then(v => setPinEnabled(v === 'true'));
+    getSetting('auto_backup').then(v => setAutoBackup(v === 'true'));
     setNotifEnabled(typeof window !== 'undefined' && Notification.permission === 'granted');
   }, []);
 
@@ -43,8 +47,23 @@ export default function SettingsPage() {
       await setSetting('pin_enabled', 'false');
       setPinEnabled(false);
     } else {
-      await setSetting('pin_enabled', 'true');
-      setPinEnabled(true);
+      const existingPin = await getSetting('pin_lock');
+      if (!existingPin) {
+        setShowPinSetup(true);
+      } else {
+        await setSetting('pin_enabled', 'true');
+        setPinEnabled(true);
+      }
+    }
+  };
+
+  const handleToggleAutoBackup = async () => {
+    if (autoBackup) {
+      await setSetting('auto_backup', 'false');
+      setAutoBackup(false);
+    } else {
+      await setSetting('auto_backup', 'true');
+      setAutoBackup(true);
     }
   };
 
@@ -68,6 +87,29 @@ export default function SettingsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (data.entries) await db.entries.bulkPut(data.entries);
+        if (data.moods) await db.moods.bulkPut(data.moods);
+        if (data.habits) await db.habits.bulkPut(data.habits);
+        if (data.gratitude) await db.gratitude.bulkPut(data.gratitude);
+        
+        db.entries.count().then(setEntryCount);
+        alert('Data imported successfully!');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to import data. Invalid file format.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   const handleClearData = async () => {
     if (!confirm('This will delete ALL your journal data permanently. Are you sure?')) return;
     if (!confirm('This action cannot be undone. Really delete everything?')) return;
@@ -82,6 +124,14 @@ export default function SettingsPage() {
     await db.emotionalReports.clear();
     setEntryCount(0);
   };
+
+  if (showPinSetup) {
+    return <PinLock onUnlock={async () => {
+      await setSetting('pin_enabled', 'true');
+      setPinEnabled(true);
+      setShowPinSetup(false);
+    }} />;
+  }
 
   return (
     <AppShell>
@@ -137,6 +187,24 @@ export default function SettingsPage() {
               }} />
             </button>
           </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>Daily Auto Backup</p>
+              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Automatically download backup JSON daily</p>
+            </div>
+            <button onClick={handleToggleAutoBackup} style={{
+              width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
+              background: autoBackup ? 'linear-gradient(135deg, var(--pink-300), var(--lavender-400))' : 'var(--neutral-200)',
+              position: 'relative', transition: 'all 0.3s',
+            }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: '50%', background: 'white',
+                position: 'absolute', top: 3,
+                left: autoBackup ? 25 : 3,
+                transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              }} />
+            </button>
+          </div>
         </motion.div>
 
         {/* AI Configuration */}
@@ -185,8 +253,12 @@ export default function SettingsPage() {
             Total entries: <strong style={{ color: 'var(--pink-400)' }}>{entryCount}</strong>
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <label className="btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+              <Upload size={14} /> Import Backup
+              <input type="file" accept=".json" onChange={handleImport} style={{ display: 'none' }} />
+            </label>
             <button className="btn-secondary" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-              <Download size={14} /> Export All Data
+              <Download size={14} /> Export Backup
             </button>
             <button className="btn-ghost" onClick={handleClearData} style={{ color: 'var(--pink-500)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Trash2 size={14} /> Clear All Data

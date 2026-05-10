@@ -7,34 +7,7 @@ import { useRouter } from 'next/navigation';
 
 export default function QuickCapture() {
   const [isOpen, setIsOpen] = useState(false);
-  const [quickNote, setQuickNote] = useState('');
   const router = useRouter();
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    if (isOpen && inputRef.current) {
-      inputRef.current.focus();
-    }
-  }, [isOpen]);
-
-  const handleQuickSave = async () => {
-    if (!quickNote.trim()) return;
-    // Import db dynamically to avoid SSR issues
-    const { db } = await import('@/lib/db');
-    await db.entries.add({
-      title: '',
-      content: quickNote,
-      mood: 3,
-      energy: 3,
-      anxiety: 2,
-      customEmotions: [],
-      tags: ['quick-note'],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    setQuickNote('');
-    setIsOpen(false);
-  };
 
   const actions = [
     { icon: PenLine, label: 'New Entry', action: () => { router.push('/new'); setIsOpen(false); } },
@@ -126,55 +99,6 @@ export default function QuickCapture() {
                   </motion.button>
                 );
               })}
-            </motion.div>
-
-            {/* Quick Note Box */}
-            <motion.div
-              initial={{ opacity: 0, y: 40, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 40, scale: 0.95 }}
-              style={{
-                position: 'fixed',
-                bottom: 160,
-                left: 24,
-                right: 96,
-                zIndex: 101,
-                background: 'var(--cream-50)',
-                borderRadius: 'var(--radius-xl)',
-                boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
-                padding: 16,
-                border: '1px solid var(--glass-border)',
-              }}
-            >
-              <textarea
-                ref={inputRef}
-                value={quickNote}
-                onChange={e => setQuickNote(e.target.value)}
-                placeholder="Capture a thought before it fades..."
-                style={{
-                  width: '100%',
-                  minHeight: 80,
-                  background: 'transparent',
-                  border: 'none',
-                  outline: 'none',
-                  resize: 'none',
-                  fontFamily: 'var(--font-journal)',
-                  fontSize: 16,
-                  color: 'var(--neutral-700)',
-                  lineHeight: 1.6,
-                }}
-              />
-              {quickNote.trim() && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}
-                >
-                  <button className="btn-primary" onClick={handleQuickSave} style={{ padding: '8px 20px', fontSize: 13 }}>
-                    Save Thought ✨
-                  </button>
-                </motion.div>
-              )}
             </motion.div>
           </>
         )}

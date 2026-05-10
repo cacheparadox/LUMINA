@@ -47,7 +47,7 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
         })
-        .catch(() => caches.match(request).then((r) => r || caches.match('/')))
+        .catch(() => caches.match(request, { ignoreSearch: true }).then((r) => r || caches.match('/')))
     );
     return;
   }
@@ -59,13 +59,13 @@ self.addEventListener('fetch', (event) => {
     url.hostname === 'fonts.gstatic.com'
   ) {
     event.respondWith(
-      caches.match(request).then((cached) => {
+      caches.match(request, { ignoreSearch: true }).then((cached) => {
         if (cached) return cached;
         return fetch(request).then((response) => {
           const clone = response.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
           return response;
-        });
+        }).catch(() => new Response('', { status: 404 }));
       })
     );
     return;
@@ -79,6 +79,6 @@ self.addEventListener('fetch', (event) => {
         caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         return response;
       })
-      .catch(() => caches.match(request))
+      .catch(() => caches.match(request, { ignoreSearch: true }).then(r => r || new Response('', { status: 404 })))
   );
 });

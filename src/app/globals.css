@@ -76,9 +76,9 @@
   --z-particles: 0;
 }
 
-/* ── Dream Space Mode Overrides ─────────────────────────── */
+/* ── Theme Overrides ─────────────────────────── */
 
-[data-theme="dream"] {
+[data-theme="dream"], [data-theme="midnight"] {
   --cream-50: #0D0B14;
   --cream-100: #141020;
   --cream-200: #1C1630;
@@ -96,6 +96,50 @@
   --neutral-700: #DAD4F0;
   --neutral-800: #EAE4F8;
   --neutral-900: #FAF4FF;
+}
+
+[data-theme="ocean"] {
+  --cream-50: #0B1420;
+  --cream-100: #101D2E;
+  --cream-200: #16263B;
+  --cream-300: #1C304A;
+  --pink-300: #6BAED6;
+  --pink-400: #4292C6;
+  --pink-500: #2171B5;
+  --lavender-100: #101D2E;
+  --lavender-300: #9ECAE1;
+  --lavender-400: #6BAED6;
+  --glass-bg: rgba(11, 20, 32, 0.85);
+  --glass-border: rgba(107, 174, 214, 0.2);
+  --glass-shadow: 0 8px 32px rgba(33, 113, 181, 0.25);
+  --neutral-50: #0B1420;
+  --neutral-100: #101D2E;
+  --neutral-200: #16263B;
+  --neutral-300: #2C4A6B;
+  --neutral-400: #5C82A6;
+  --neutral-500: #8CA6C2;
+  --neutral-600: #B3C8DE;
+  --neutral-700: #D6E4F0;
+  --neutral-800: #EAF2F8;
+  --neutral-900: #F4F8FB;
+}
+
+[data-theme="lavender"] {
+  --cream-50: #F5F0FA;
+  --pink-300: #A892D0;
+  --glass-bg: rgba(245, 240, 250, 0.72);
+}
+
+[data-theme="sage"] {
+  --cream-50: #F0F5ED;
+  --pink-300: #7BA88C;
+  --glass-bg: rgba(240, 245, 237, 0.72);
+}
+
+[data-theme="rose"] {
+  --cream-50: #FFF0F3;
+  --pink-300: #E88099;
+  --glass-bg: rgba(255, 240, 243, 0.72);
 }
 
 /* ── Global Styles ──────────────────────────────────────── */

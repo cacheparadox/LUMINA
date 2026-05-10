@@ -3,6 +3,7 @@
 import Sidebar from '@/components/Sidebar';
 import AmbientBackground from '@/components/AmbientBackground';
 import QuickCapture from '@/components/QuickCapture';
+import AmbientAudio from '@/components/AmbientAudio';
 import { usePathname } from 'next/navigation';
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
@@ -31,6 +32,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </main>
       {!isDreamSpace && <QuickCapture />}
+      <AmbientAudio />
     </>
   );
 }
