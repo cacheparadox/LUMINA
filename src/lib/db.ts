@@ -53,7 +53,7 @@ export interface MoodRecord {
 
 export interface Prompt {
   id?: number;
-  category: 'healing' | 'relationships' | 'self-discovery' | 'creativity' | 'shadow-work' | 'goals' | 'gratitude';
+  category: string;
   text: string;
   isFavorite?: boolean;
 }
@@ -228,8 +228,7 @@ export function isHighIntensityEntry(intensity: number): boolean {
 // ── Seed Data ──────────────────────────────────────────────────
 
 export async function seedPrompts() {
-  const count = await db.prompts.count();
-  if (count > 0) return;
+  await db.prompts.clear();
 
   const prompts: Omit<Prompt, 'id'>[] = [
     // Self-Discovery
