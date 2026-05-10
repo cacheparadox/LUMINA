@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ✨ LUMINA — Your Emotional Garden
 
-## Getting Started
+> A beautiful, offline-first, emotionally intelligent journaling system that evolves alongside you.
 
-First, run the development server:
+![Main Interface](public/splash.png)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+LUMINA is not just a notes app. It is a memory archive, a mood mirror, and a private emotional ecosystem. Designed with a cozy, dreamy "cottagecore" aesthetic, it provides a safe space for your late-night thoughts under fairy lights.
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🌸 Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+*   **Offline-First & Local:** Your private thoughts never leave your device unless you want them to. All data is securely stored locally using IndexedDB (via Dexie.js), and the app runs entirely offline as an installable PWA.
+*   **Security:** Built-in PIN lockbox and biometric (fingerprint/Face ID) unlock support.
+*   **AI Emotional Analysis:** Integrates seamlessly with OpenRouter (Claude, GPT, Gemini). Automatically scores your entries for emotional intensity (1-10) and tags high-intensity entries as **Memories ⚡**.
+*   **Voice Journaling:** Native voice recording with waveform visualization and auto-transcription using the Web Speech API.
+*   **Dream Space:** A distraction-free, dark-themed writing environment featuring a beautiful particle background and soothing rain ambience (Web Audio API).
+*   **Habit & Self-Care Tracking:** Track sleep, water, workouts, and meditation directly in the app.
+*   **Gratitude Garden:** A dedicated space for daily positive reflections.
+*   **Mood & Calendar Heatmap:** Visualize your emotional journey with color-coded, interactive monthly heatmaps and mood distribution charts.
+*   **Memory Timeline & Photo Wall:** Browse past entries in a chronological timeline or view your photo memoirs in a Pinterest-style masonry grid.
+*   **Notifications & Reminders:** Gentle check-ins, yearly rewinds, and monthly/yearly anniversary notifications for your past entries.
+*   **Aesthetic Customization:** Personalize your journal with different font choices, color themes (Cream, Lavender, Rose, Midnight, etc.), and ambient background sounds.
+*   **RAG-Ready AI Chat:** "Talk to your past self" by asking the AI questions about your previous journal entries.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 🚀 Technology Stack
 
-## Learn More
+*   **Framework:** Next.js 16 (App Router)
+*   **Styling:** Vanilla CSS, minimal Tailwind, and Framer Motion for buttery-smooth animations and glassmorphism UI.
+*   **Database:** Dexie.js (IndexedDB wrapper)
+*   **AI Backend:** OpenRouter (Multi-model fallback)
+*   **PWA:** Custom Service Worker (`sw.js`) and Manifest for native app-like installation.
 
-To learn more about Next.js, take a look at the following resources:
+## 🛠️ Getting Started
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/LokiLaufeyson-TheTrickster/LUMINA.git
+   cd LUMINA
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open [http://localhost:3000](http://localhost:3000) in your browser.
+5. (Optional) Navigate to **Settings** within the app to add your OpenRouter API key to enable AI Emotion Scoring and Chat features.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🌙 Design Philosophy
 
-## Deploy on Vercel
+LUMINA embraces the "late-night thoughts under fairy lights" vibe. It avoids sterile tech aesthetics in favor of:
+*   Soft cream backgrounds and warm pink/lavender accents
+*   Glassmorphism cards and smooth Framer Motion transitions
+*   Floating particles (HTML5 Canvas) instead of heavy DOM elements
+*   A focus on user privacy (Local-First Policy)
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+*Built with love, for your inner world.*
