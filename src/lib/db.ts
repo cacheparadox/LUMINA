@@ -287,6 +287,22 @@ export async function seedPrompts() {
     { category: 'gratitude', text: 'Name three things you\'re proud of yourself for.' },
     { category: 'gratitude', text: 'What simple pleasure did you enjoy recently?' },
     { category: 'gratitude', text: 'Who or what are you most thankful for right now?' },
+    { category: 'gratitude', text: 'Who in your life do you take for granted, and how can you show them appreciation?' },
+    { category: 'gratitude', text: 'What is a physical ability or sense you are deeply grateful for today?' },
+    { category: 'gratitude', text: 'Write about a difficult experience that you are now thankful for.' },
+    { category: 'gratitude', text: 'What is a modern convenience you use every day but rarely appreciate?' },
+    // Daily Reflection
+    { category: 'daily', text: 'What was the quietest moment of your day today?' },
+    { category: 'daily', text: 'What drained your energy today, and what restored it?' },
+    { category: 'daily', text: 'Did you act in alignment with your values today?' },
+    { category: 'daily', text: 'What is one small, beautiful thing you noticed today?' },
+    { category: 'daily', text: 'If today was a chapter in a book, what would the title be?' },
+    { category: 'daily', text: 'What is one thing you could have done better today, without judgment?' },
+    // Existential & Deep
+    { category: 'deep', text: 'If you had to write a one-sentence philosophy of your life, what would it be?' },
+    { category: 'deep', text: 'What do you want people to say about you when you are no longer in the room?' },
+    { category: 'deep', text: 'If money, time, and talent were unlimited, how would you spend the next 5 years?' },
+    { category: 'deep', text: 'What is the most beautiful thing you have ever witnessed?' },
   ];
 
   await db.prompts.bulkAdd(prompts);

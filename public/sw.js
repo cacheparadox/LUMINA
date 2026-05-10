@@ -35,6 +35,9 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET requests
   if (request.method !== 'GET') return;
 
+  // Skip non-HTTP requests (like chrome-extension://)
+  if (!url.protocol.startsWith('http')) return;
+
   // Skip API calls to OpenRouter
   if (url.hostname === 'openrouter.ai') return;
 

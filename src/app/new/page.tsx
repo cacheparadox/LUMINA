@@ -21,8 +21,8 @@ function NewEntryForm() {
   const searchParams = useSearchParams();
   const promptText = searchParams.get('prompt');
 
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState(promptText ? `"${promptText}"\n\n` : '');
+  const [title, setTitle] = useState(promptText || '');
+  const [content, setContent] = useState('');
   const [mood, setMood] = useState(3);
   const [energy, setEnergy] = useState(3);
   const [anxiety, setAnxiety] = useState(2);
