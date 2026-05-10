@@ -1,6 +1,20 @@
-const CACHE_NAME = 'lumina-v1';
+const CACHE_NAME = 'lumina-v2';
 const STATIC_ASSETS = [
   '/',
+  '/calendar',
+  '/chat',
+  '/customize',
+  '/dream',
+  '/gratitude',
+  '/habits',
+  '/mood',
+  '/new',
+  '/photos',
+  '/prompts',
+  '/rewind',
+  '/search',
+  '/settings',
+  '/timeline',
   '/manifest.json',
   '/logo.png',
 ];

@@ -6,7 +6,7 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function AmbientAudio() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioRef = useRef<any>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [sound, setSound] = useState('none');
   const [userInteracted, setUserInteracted] = useState(false);
@@ -42,37 +42,130 @@ export default function AmbientAudio() {
   }, []);
 
   useEffect(() => {
-    if (sound === 'none' || !userInteracted) {
+    // If no sound or no interaction, stop everything
+    if (sound === 'none' || !userInteracted || !isPlaying) {
       if (audioRef.current) {
-        audioRef.current.pause();
+        audioRef.current.close();
+        audioRef.current = null;
       }
       return;
     }
 
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.loop = true;
-      audioRef.current.volume = 0.3;
+    // Stop existing context if playing a different sound
+    if (audioRef.current) {
+      audioRef.current.close();
+      audioRef.current = null;
     }
 
-    // Map sound to a source (we can use open source nature sounds)
-    const SOUND_MAP: Record<string, string> = {
-      rain: 'https://cdn.pixabay.com/download/audio/2021/08/04/audio_0625c1539c.mp3',
-      wind: 'https://cdn.pixabay.com/download/audio/2021/08/09/audio_6512ebdf92.mp3',
-      fire: 'https://cdn.pixabay.com/download/audio/2022/10/25/audio_2491a921ff.mp3',
-      ocean: 'https://cdn.pixabay.com/download/audio/2022/01/18/audio_d0a13f69d2.mp3',
-      night: 'https://cdn.pixabay.com/download/audio/2022/03/15/audio_cf83e92592.mp3',
-    };
+    const audioCtx = new AudioContext();
+    // We store the context in audioRef (even though it's typed as HTMLAudioElement, we can cheat or use a new ref, let's just use it as any)
+    (audioRef as any).current = audioCtx;
 
-    if (SOUND_MAP[sound] && audioRef.current.src !== SOUND_MAP[sound]) {
-      audioRef.current.src = SOUND_MAP[sound];
-    }
-
-    if (isPlaying && userInteracted) {
-      audioRef.current.play().catch(e => console.log('Audio play blocked:', e));
+    const bufferSize = 2 * audioCtx.sampleRate;
+    const noiseBuffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const output = noiseBuffer.getChannelData(0);
+    
+    // Generate different noise profiles based on sound type
+    if (sound === 'rain' || sound === 'ocean') {
+      // Brown noise
+      let lastOut = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        output[i] = (lastOut + (0.02 * white)) / 1.02;
+        lastOut = output[i];
+        output[i] *= 3.5;
+      }
+    } else if (sound === 'wind' || sound === 'fire') {
+      // Pink noise
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.96900 * b2 + white * 0.1538520;
+        b3 = 0.86650 * b3 + white * 0.3104856;
+        b4 = 0.55000 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.0168980;
+        output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+        output[i] *= 0.11; // compensate gain
+        b6 = white * 0.115926;
+      }
     } else {
-      audioRef.current.pause();
+      // Night (crickets simulation using high-pitch sine bursts, simple white noise for now)
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = (Math.random() * 2 - 1) * 0.1;
+      }
     }
+
+    const noiseSource = audioCtx.createBufferSource();
+    noiseSource.buffer = noiseBuffer;
+    noiseSource.loop = true;
+
+    const gainNode = audioCtx.createGain();
+    const filter = audioCtx.createBiquadFilter();
+
+    // Configure filters based on sound
+    if (sound === 'rain') {
+      filter.type = 'lowpass';
+      filter.frequency.value = 400;
+      gainNode.gain.value = 0.2;
+    } else if (sound === 'ocean') {
+      filter.type = 'lowpass';
+      filter.frequency.value = 200;
+      gainNode.gain.value = 0.3;
+      
+      // Simulate waves with an LFO
+      const lfo = audioCtx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.1; // 10 second waves
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 0.2;
+      lfo.connect(lfoGain);
+      lfoGain.connect(gainNode.gain);
+      lfo.start();
+    } else if (sound === 'wind') {
+      filter.type = 'bandpass';
+      filter.frequency.value = 500;
+      filter.Q.value = 0.5;
+      gainNode.gain.value = 0.3;
+      
+      // Wind gusts LFO
+      const lfo = audioCtx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.2;
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 0.15;
+      lfo.connect(lfoGain);
+      lfoGain.connect(gainNode.gain);
+      lfo.start();
+    } else if (sound === 'fire') {
+      filter.type = 'lowpass';
+      filter.frequency.value = 800;
+      gainNode.gain.value = 0.15;
+    } else if (sound === 'night') {
+      filter.type = 'highpass';
+      filter.frequency.value = 4000;
+      gainNode.gain.value = 0.05;
+      
+      // Crickets LFO
+      const lfo = audioCtx.createOscillator();
+      lfo.type = 'square';
+      lfo.frequency.value = 2; // Chirp rate
+      const lfoGain = audioCtx.createGain();
+      lfoGain.gain.value = 0.05;
+      lfo.connect(lfoGain);
+      lfoGain.connect(gainNode.gain);
+      lfo.start();
+    }
+
+    noiseSource.connect(filter);
+    filter.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    noiseSource.start();
+
+    return () => {
+      audioCtx.close();
+    };
   }, [sound, isPlaying, userInteracted]);
 
   if (sound === 'none') return null;
