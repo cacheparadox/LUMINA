@@ -67,3 +67,11 @@ export function getWordCount(text: string): number {
 export function searchEntries(query: string, content: string): boolean {
   return content.toLowerCase().includes(query.toLowerCase());
 }
+
+export function vibrate(pattern: number | number[] = 50) {
+  if (typeof window !== 'undefined' && navigator.vibrate) {
+    try {
+      navigator.vibrate(pattern);
+    } catch(e) {}
+  }
+}

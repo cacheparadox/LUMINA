@@ -121,7 +121,7 @@ export default function JournalPage() {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 16 }}>
             <div>
               <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--neutral-600)', marginBottom: 8 }}>
-                Today&apos;s Garden
+                Memory Garden
               </h2>
               <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
                 <div>
@@ -129,7 +129,7 @@ export default function JournalPage() {
                     {todayEntries?.length || 0}
                   </span>
                   <span style={{ fontSize: 13, color: 'var(--neutral-400)', marginLeft: 6 }}>
-                    {todayEntries?.length === 1 ? 'entry' : 'entries'}
+                    {todayEntries?.length === 1 ? 'memory' : 'memories'}
                   </span>
                 </div>
                 {recentMood && (
@@ -152,7 +152,7 @@ export default function JournalPage() {
               style={{ display: 'flex', alignItems: 'center', gap: 8 }}
             >
               <PenLine size={16} />
-              New Entry
+              New Memory
             </motion.button>
           </div>
         </motion.div>
@@ -218,7 +218,7 @@ export default function JournalPage() {
             color: 'var(--neutral-600)',
             marginBottom: 16,
           }}>
-            Recent Entries
+            Recent Memories
           </h2>
 
           {(!entries || entries.length === 0) ? (
@@ -238,7 +238,7 @@ export default function JournalPage() {
                 color: 'var(--neutral-600)',
                 marginBottom: 8,
               }}>
-                Your garden is waiting
+                Your memory garden awaits
               </h3>
               <p style={{
                 fontSize: 14,
@@ -248,13 +248,13 @@ export default function JournalPage() {
                 margin: '0 auto 20px',
                 lineHeight: 1.6,
               }}>
-                Plant your first thought and watch your emotional garden bloom over time.
+                Plant your first thought and watch your emotional landscape bloom over time.
               </p>
               <button
                 className="btn-primary"
                 onClick={() => router.push('/new')}
               >
-                Write Your First Entry ✨
+                Plant a Memory ✨
               </button>
             </motion.div>
           ) : (

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db } from '@/lib/db';
@@ -17,6 +17,7 @@ export default function RewindPage() {
   const [rewindText, setRewindText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [periodPhotos, setPeriodPhotos] = useState<any[]>([]);
 
   const entries = useLiveQuery(() => db.entries.orderBy('createdAt').reverse().toArray(), []);
 
@@ -32,6 +33,17 @@ export default function RewindPage() {
   // High intensity memories (intensity >= 7)
   const memories = useMemo(() => {
     return periodEntries.filter(e => e.isHighIntensity || (e.overallIntensity && e.overallIntensity >= 7));
+  }, [periodEntries]);
+
+  // Fetch media for period
+  useEffect(() => {
+    async function loadMedia() {
+      if (!periodEntries.length) return setPeriodPhotos([]);
+      const entryIds = periodEntries.map(e => e.id!);
+      const media = await db.media.where('entryId').anyOf(entryIds).toArray();
+      setPeriodPhotos(media.filter(m => m.type === 'photo'));
+    }
+    loadMedia();
   }, [periodEntries]);
 
   // Anniversaries: entries from today's date in previous years
@@ -148,6 +160,25 @@ export default function RewindPage() {
             </div>
           ))}
         </div>
+
+        {/* Photos Strip */}
+        {periodPhotos.length > 0 && (
+          <div className="glass-card-static" style={{ padding: 20, marginBottom: 20 }}>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--neutral-600)', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Star size={14} style={{ color: 'var(--gold-300)' }} /> Captured Moments
+            </h3>
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8 }}>
+              {periodPhotos.map(photo => (
+                <img 
+                  key={photo.id}
+                  src={URL.createObjectURL(photo.blob)} 
+                  alt="Memory"
+                  style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 'var(--radius-md)', flexShrink: 0 }}
+                />
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* High Intensity Memories */}
         {memories.length > 0 && (

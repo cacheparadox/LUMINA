@@ -7,7 +7,22 @@ import { useRouter } from 'next/navigation';
 
 export default function QuickCapture() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    let timeout: any;
+    const handleScroll = () => {
+      setIsScrolling(true);
+      clearTimeout(timeout);
+      timeout = setTimeout(() => setIsScrolling(false), 800);
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(timeout);
+    };
+  }, []);
 
   const actions = [
     { icon: PenLine, label: 'New Entry', action: () => { router.push('/new'); setIsOpen(false); } },
@@ -23,6 +38,12 @@ export default function QuickCapture() {
         onClick={() => setIsOpen(!isOpen)}
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
+        animate={{ 
+          scale: isScrolling && !isOpen ? 0.8 : 1, 
+          opacity: isScrolling && !isOpen ? 0.5 : 1,
+          y: isScrolling && !isOpen ? 20 : 0 
+        }}
+        transition={{ duration: 0.3 }}
         aria-label="Quick capture"
       >
         <motion.div

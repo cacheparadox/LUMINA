@@ -114,12 +114,12 @@ export default function TimelinePage() {
         {/* Timeline */}
         {groupedEntries.length === 0 ? (
           <div className="glass-card-static" style={{ padding: 48, textAlign: 'center' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📜</div>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>✨</div>
             <h3 style={{ fontSize: 18, fontWeight: 600, color: 'var(--neutral-600)', marginBottom: 8 }}>
-              Your timeline awaits
+              An empty canvas
             </h3>
-            <p style={{ fontSize: 14, color: 'var(--neutral-400)' }}>
-              Start writing to build your emotional memory timeline.
+            <p style={{ fontSize: 14, color: 'var(--neutral-400)', fontStyle: 'italic', fontFamily: 'var(--font-journal)' }}>
+              "Every memory is a star waiting to be born. Start writing to weave your constellation."
             </p>
           </div>
         ) : (

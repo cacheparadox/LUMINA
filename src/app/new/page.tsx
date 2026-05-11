@@ -10,7 +10,7 @@ import AppShell from '@/components/AppShell';
 import MoodSelector from '@/components/MoodSelector';
 import VoiceRecorder from '@/components/VoiceRecorder';
 import EmotionBadge from '@/components/EmotionBadge';
-import { EMOTION_STICKERS, TAG_SUGGESTIONS, ENERGY_LEVELS, ANXIETY_LEVELS } from '@/lib/utils';
+import { EMOTION_STICKERS, TAG_SUGGESTIONS, ENERGY_LEVELS, ANXIETY_LEVELS, vibrate, MOOD_CONFIG } from '@/lib/utils';
 import {
   ArrowLeft, Save, Tag, MapPin, Image as ImageIcon,
   Mic, X, ChevronDown, ChevronUp, Sparkles, Loader2
@@ -34,11 +34,32 @@ function NewEntryForm() {
   const [showVoice, setShowVoice] = useState(false);
   const [saving, setSaving] = useState(false);
   const [scoring, setScoring] = useState(false);
+  const [magicMoment, setMagicMoment] = useState(false);
   const [fullscreenImage, setFullscreenImage] = useState<string | null>(null);
   const [photos, setPhotos] = useState<File[]>([]);
   const [audioBlobs, setAudioBlobs] = useState<{ blob: Blob; duration: number }[]>([]);
   const [isVoiceEntry, setIsVoiceEntry] = useState(false);
+  const [recentTags, setRecentTags] = useState<string[]>(TAG_SUGGESTIONS.slice(0, 8));
   const contentRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    async function loadTags() {
+      const allEntries = await db.entries.toArray();
+      const tagCounts: Record<string, number> = {};
+      allEntries.forEach(e => {
+        e.tags.forEach(t => {
+          tagCounts[t] = (tagCounts[t] || 0) + 1;
+        });
+      });
+      const sortedTags = Object.entries(tagCounts)
+        .sort((a, b) => b[1] - a[1])
+        .map(t => t[0]);
+        
+      const combined = Array.from(new Set([...sortedTags.slice(0, 8), ...TAG_SUGGESTIONS.slice(0, 4)]));
+      setRecentTags(combined.slice(0, 10)); // Limit to 10
+    }
+    loadTags();
+  }, []);
 
   useEffect(() => {
     if (contentRef.current) {
@@ -54,6 +75,10 @@ function NewEntryForm() {
     setSaving(true);
 
     try {
+      vibrate([30, 50, 30]);
+      setMagicMoment(true);
+      await new Promise(r => setTimeout(r, 600));
+
       const entryId = await db.entries.add({
         title: title || (content.trim().split('\n')[0].slice(0, 50)),
         content: selectedStickers.length > 0 ? `${selectedStickers.join(' ')} ${content}` : content,
@@ -343,7 +368,7 @@ function NewEntryForm() {
             <Tag size={14} /> Tags
           </h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
-            {TAG_SUGGESTIONS.map(tag => (
+            {recentTags.map(tag => (
               <button
                 key={tag}
                 onClick={() => toggleTag(tag)}
@@ -353,7 +378,7 @@ function NewEntryForm() {
                 {tag}
               </button>
             ))}
-            {tags.filter(t => !TAG_SUGGESTIONS.includes(t)).map(tag => (
+            {tags.filter(t => !recentTags.includes(t)).map(tag => (
               <button
                 key={tag}
                 onClick={() => toggleTag(tag)}
@@ -495,6 +520,28 @@ function NewEntryForm() {
               alt="Fullscreen view"
             />
           </div>
+        )}
+
+        {/* Magic Moment Animation */}
+        {magicMoment && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: [0, 1, 0], scale: [0, 2, 4] }}
+            transition={{ duration: 0.6, ease: "easeOut" }}
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '150vh',
+              height: '150vh',
+              borderRadius: '50%',
+              background: `radial-gradient(circle, ${MOOD_CONFIG[mood as keyof typeof MOOD_CONFIG].color} 0%, transparent 70%)`,
+              zIndex: 9999,
+              pointerEvents: 'none',
+              mixBlendMode: 'screen'
+            }}
+          />
         )}
       </div>
     </AppShell>

@@ -102,7 +102,7 @@ export default function HabitsPage() {
           <div>
             <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--neutral-700)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
               <ListChecks size={24} style={{ color: 'var(--pink-300)' }} />
-              Self-Care Tracker
+              Self-Care Rituals
             </h1>
             <p style={{ fontSize: 14, color: 'var(--neutral-400)', marginBottom: 28 }}>
               Small steps, big changes

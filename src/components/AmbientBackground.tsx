@@ -1,9 +1,18 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { db } from '@/lib/db';
+import { MOOD_CONFIG } from '@/lib/utils';
 
 export default function AmbientBackground({ dreamMode = false }: { dreamMode?: boolean }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [latestMood, setLatestMood] = useState<number>(3);
+
+  useEffect(() => {
+    db.entries.orderBy('createdAt').last().then(entry => {
+      if (entry && entry.mood) setLatestMood(entry.mood);
+    });
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,9 +40,18 @@ export default function AmbientBackground({ dreamMode = false }: { dreamMode?: b
     resize();
     window.addEventListener('resize', resize);
 
+    const hexToRgb = (hex: string) => {
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      return `rgba(${r},${g},${b},`;
+    };
+
+    const baseColor = hexToRgb(MOOD_CONFIG[latestMood as keyof typeof MOOD_CONFIG]?.color || '#E8C8A0');
+
     const colors = dreamMode
       ? ['rgba(196,181,224,', 'rgba(168,146,208,', 'rgba(139,111,192,']
-      : ['rgba(244,160,181,', 'rgba(196,181,224,', 'rgba(255,213,128,'];
+      : [baseColor, 'rgba(196,181,224,', 'rgba(255,213,128,'];
 
     // Initialize stars for dream mode
     if (dreamMode) {
@@ -123,14 +141,44 @@ export default function AmbientBackground({ dreamMode = false }: { dreamMode?: b
 
     animate();
 
+    // Typing effect for Dream Mode
+    const handleTyping = (e: KeyboardEvent) => {
+      if (!dreamMode || e.key.length !== 1) return; // Only printable chars
+      
+      const color = colors[Math.floor(Math.random() * colors.length)];
+      for(let j=0; j<2; j++) {
+        particles.push({
+          x: Math.random() * canvas!.width,
+          y: canvas!.height * 0.7 + (Math.random() * 100), // Near the bottom input area
+          size: Math.random() * 3 + 2,
+          speedY: -(Math.random() * 2 + 1), // Faster upward speed
+          speedX: (Math.random() - 0.5) * 2,
+          opacity: 0.8,
+          color,
+          life: 0,
+          maxLife: Math.random() * 100 + 50, // Shorter life
+        });
+      }
+    };
+    
+    if (dreamMode) {
+      window.addEventListener('keydown', handleTyping);
+    }
+
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resize);
+      if (dreamMode) window.removeEventListener('keydown', handleTyping);
     };
-  }, [dreamMode]);
+  }, [dreamMode, latestMood]);
 
   return (
-    <div className="ambient-bg">
+    <div 
+      className="ambient-bg" 
+      style={{ 
+        background: !dreamMode ? `radial-gradient(circle at 50% 0%, ${MOOD_CONFIG[latestMood as keyof typeof MOOD_CONFIG]?.color}22 0%, transparent 70%)` : undefined 
+      }}
+    >
       <canvas
         ref={canvasRef}
         style={{
