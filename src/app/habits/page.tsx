@@ -5,8 +5,10 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import { motion, AnimatePresence } from 'framer-motion';
 import { db, getSetting, setSetting } from '@/lib/db';
 import AppShell from '@/components/AppShell';
-import { ListChecks, Droplets, Moon, Dumbbell, BookOpen, Brain, Plus, Check, Star, Trash2, Edit2, X } from 'lucide-react';
-import { format, isToday } from 'date-fns';
+import IconPicker, { ICON_MAP } from '@/components/IconPicker';
+import { ListChecks, Plus, Check, Edit2, X, Flame, Trophy, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { format, isToday, subDays, startOfDay, isSameDay } from 'date-fns';
+import { vibrate } from '@/lib/utils';
 
 const DEFAULT_HABITS = [
   { id: 'sleep', type: 'sleep', label: 'Sleep', iconName: 'Moon', unit: 'hrs', max: 12, color: 'var(--lavender-300)' },
@@ -16,9 +18,12 @@ const DEFAULT_HABITS = [
   { id: 'meditation', type: 'meditation', label: 'Meditation', iconName: 'Brain', unit: 'min', max: 60, color: 'var(--lavender-400)' },
 ];
 
-const ICONS: Record<string, React.ElementType> = {
-  Moon, Droplets, Dumbbell, BookOpen, Brain, Star
-};
+const HABIT_COLORS = [
+  'var(--pink-300)', 'var(--lavender-300)', 'var(--sage-300)',
+  'var(--gold-300)', 'var(--lavender-400)', 'var(--pink-400)',
+];
+
+type ViewMode = 'today' | 'streaks';
 
 export default function HabitsPage() {
   const [addingHabit, setAddingHabit] = useState<string | null>(null);
@@ -26,18 +31,19 @@ export default function HabitsPage() {
   const [habitList, setHabitList] = useState(DEFAULT_HABITS);
   const [isManageMode, setIsManageMode] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  
+  const [viewMode, setViewMode] = useState<ViewMode>('today');
+
   // New custom habit state
   const [newLabel, setNewLabel] = useState('');
   const [newUnit, setNewUnit] = useState('');
   const [newMax, setNewMax] = useState(10);
+  const [newIconName, setNewIconName] = useState('Star');
+  const [newColor, setNewColor] = useState('var(--pink-400)');
 
   useEffect(() => {
     getSetting('custom_habits').then(val => {
       if (val) {
-        try {
-          setHabitList(JSON.parse(val));
-        } catch(e) {}
+        try { setHabitList(JSON.parse(val)); } catch(e) {}
       }
     });
   }, []);
@@ -52,20 +58,25 @@ export default function HabitsPage() {
     return all.filter(h => isToday(new Date(h.timestamp)));
   }, []);
 
+  // All habits for streak calculation (last 60 days)
+  const allHabits = useLiveQuery(async () => {
+    const cutoff = subDays(new Date(), 60);
+    return db.habits.where('timestamp').aboveOrEqual(cutoff).toArray();
+  }, []);
+
   const handleSaveHabitValue = async (type: string) => {
     const existing = todayHabits?.find(h => h.type === type);
     if (existing?.id) {
       await db.habits.delete(existing.id);
     }
-
     if (habitValue > 0) {
+      vibrate(20);
       await db.habits.add({
         type: type as any,
         value: habitValue,
         timestamp: new Date(),
       });
     }
-
     setAddingHabit(null);
     setHabitValue(0);
   };
@@ -74,26 +85,46 @@ export default function HabitsPage() {
     if (!newLabel.trim()) return;
     const newId = 'custom_' + Date.now();
     const newList = [...habitList, {
-      id: newId,
-      type: newId,
+      id: newId, type: newId,
       label: newLabel.trim(),
-      iconName: 'Star',
+      iconName: newIconName,
       unit: newUnit.trim() || 'times',
       max: newMax || 10,
-      color: 'var(--pink-400)',
+      color: newColor,
     }];
     saveHabitList(newList);
     setShowAddModal(false);
-    setNewLabel('');
-    setNewUnit('');
-    setNewMax(10);
+    setNewLabel(''); setNewUnit(''); setNewMax(10);
+    setNewIconName('Star'); setNewColor('var(--pink-400)');
   };
 
   const handleRemoveHabit = (id: string) => {
-    if (confirm('Remove this habit from tracking? Past data will not be deleted.')) {
-      saveHabitList(habitList.filter(h => h.id !== id));
-    }
+    saveHabitList(habitList.filter(h => h.id !== id));
   };
+
+  // Streak calculations
+  const getStreakData = (type: string) => {
+    if (!allHabits) return { current: 0, best: 0, last30: Array(30).fill(false) };
+    const typeHabits = allHabits.filter(h => h.type === type);
+    const last30: boolean[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const day = startOfDay(subDays(new Date(), i));
+      last30.push(typeHabits.some(h => isSameDay(new Date(h.timestamp), day)));
+    }
+    // Current streak (counting back from today)
+    let current = 0;
+    for (let i = last30.length - 1; i >= 0; i--) {
+      if (last30[i]) current++; else break;
+    }
+    // Best streak
+    let best = 0, run = 0;
+    for (const tracked of last30) {
+      if (tracked) { run++; best = Math.max(best, run); } else { run = 0; }
+    }
+    return { current, best, last30 };
+  };
+
+  const totalTrackedToday = todayHabits?.length || 0;
 
   return (
     <AppShell>
@@ -104,12 +135,12 @@ export default function HabitsPage() {
               <ListChecks size={24} style={{ color: 'var(--pink-300)' }} />
               Self-Care Rituals
             </h1>
-            <p style={{ fontSize: 14, color: 'var(--neutral-400)', marginBottom: 28 }}>
+            <p style={{ fontSize: 14, color: 'var(--neutral-400)', marginBottom: 20 }}>
               Small steps, big changes
             </p>
           </div>
-          <button 
-            className="btn-ghost" 
+          <button
+            className="btn-ghost"
             onClick={() => setIsManageMode(!isManageMode)}
             style={{ fontSize: 13, display: 'flex', gap: 4, alignItems: 'center', color: isManageMode ? 'var(--pink-500)' : 'var(--neutral-400)' }}
           >
@@ -118,14 +149,25 @@ export default function HabitsPage() {
           </button>
         </motion.div>
 
+        {/* View Tabs */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          {(['today', 'streaks'] as const).map(mode => (
+            <button
+              key={mode}
+              onClick={() => setViewMode(mode)}
+              className={viewMode === mode ? 'tag tag-pink' : 'tag'}
+              style={{ cursor: 'pointer', border: 'none', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 5 }}
+            >
+              {mode === 'today' ? <Check size={13} /> : <Flame size={13} />}
+              {mode === 'today' ? 'Today' : 'Streaks'}
+            </button>
+          ))}
+        </div>
+
         {isManageMode && (
-          <motion.div 
-            initial={{ opacity: 0, height: 0 }} 
-            animate={{ opacity: 1, height: 'auto' }}
-            style={{ marginBottom: 20 }}
-          >
-            <button 
-              className="btn-secondary" 
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginBottom: 20 }}>
+            <button
+              className="btn-secondary"
               onClick={() => setShowAddModal(true)}
               style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: 12 }}
             >
@@ -134,195 +176,257 @@ export default function HabitsPage() {
           </motion.div>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <AnimatePresence>
+        {/* ═══════ TODAY VIEW ═══════ */}
+        {viewMode === 'today' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <AnimatePresence>
+              {habitList.map((habit, i) => {
+                const Icon = ICON_MAP[habit.iconName] || ICON_MAP['Star'];
+                const todayEntry = todayHabits?.find(h => h.type === habit.type);
+                const isEditing = addingHabit === habit.id;
+                const progress = todayEntry ? (todayEntry.value / habit.max) * 100 : 0;
+
+                return (
+                  <motion.div
+                    key={habit.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="glass-card-static"
+                    style={{ padding: 20, position: 'relative' }}
+                  >
+                    {isManageMode && (
+                      <button
+                        onClick={() => handleRemoveHabit(habit.id)}
+                        style={{ position: 'absolute', top: -8, right: -8, background: 'var(--pink-400)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', zIndex: 10 }}
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isEditing ? 16 : 0, opacity: isManageMode ? 0.6 : 1 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{
+                          width: 42, height: 42, borderRadius: '50%',
+                          background: todayEntry ? `${habit.color}25` : 'var(--neutral-100)',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.3s',
+                        }}>
+                          <Icon size={20} style={{ color: todayEntry ? habit.color : 'var(--neutral-400)' }} />
+                        </div>
+                        <div>
+                          <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--neutral-700)' }}>{habit.label}</h3>
+                          {todayEntry ? (
+                            <span style={{ fontSize: 12, color: habit.color, fontWeight: 500 }}>
+                              {todayEntry.value} {habit.unit} today ✓
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Not tracked yet today</span>
+                          )}
+                        </div>
+                      </div>
+
+                      {!isManageMode && (
+                        <button
+                          onClick={() => {
+                            if (isEditing) { setAddingHabit(null); } else { setAddingHabit(habit.id); setHabitValue(todayEntry?.value || 0); }
+                          }}
+                          style={{
+                            width: 36, height: 36, borderRadius: '50%',
+                            border: todayEntry ? `2px solid ${habit.color}` : '2px solid var(--neutral-200)',
+                            background: todayEntry ? `${habit.color}15` : 'transparent',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            color: todayEntry ? habit.color : 'var(--neutral-400)',
+                          }}
+                        >
+                          {todayEntry ? <Check size={16} /> : <Plus size={16} />}
+                        </button>
+                      )}
+                    </div>
+
+                    {todayEntry && !isEditing && !isManageMode && (
+                      <div style={{ marginTop: 12, height: 4, background: 'var(--neutral-100)', borderRadius: 2, overflow: 'hidden' }}>
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(progress, 100)}%` }}
+                          transition={{ delay: 0.3, duration: 0.6 }}
+                          style={{ height: '100%', background: habit.color, borderRadius: 2 }}
+                        />
+                      </div>
+                    )}
+
+                    {isEditing && !isManageMode && (
+                      <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                          <span style={{ fontSize: 12, color: 'var(--neutral-500)' }}>{habitValue} {habit.unit}</span>
+                          <span style={{ fontSize: 12, color: 'var(--neutral-400)' }}>max: {habit.max}</span>
+                        </div>
+                        <input type="range" min="0" max={habit.max} value={habitValue} onChange={e => setHabitValue(Number(e.target.value))} style={{ width: '100%', marginBottom: 12 }} />
+                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                          <button className="btn-ghost" onClick={() => { setHabitValue(0); handleSaveHabitValue(habit.type); }} style={{ fontSize: 13, color: 'var(--pink-500)' }}>Clear</button>
+                          <button className="btn-primary" onClick={() => handleSaveHabitValue(habit.type)} style={{ fontSize: 13, padding: '8px 16px' }}>Save</button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          </div>
+        )}
+
+        {/* ═══════ STREAKS VIEW ═══════ */}
+        {viewMode === 'streaks' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Overview Card */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card-static" style={{ padding: 20, textAlign: 'center', background: 'linear-gradient(135deg, var(--glass-bg), rgba(244,160,181,0.08))' }}>
+              <div style={{ fontSize: 36, marginBottom: 4 }}>🔥</div>
+              <p style={{ fontSize: 28, fontWeight: 700, color: 'var(--pink-400)' }}>
+                {totalTrackedToday}/{habitList.length}
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>rituals completed today</p>
+            </motion.div>
+
+            {/* Per-habit streak cards */}
             {habitList.map((habit, i) => {
-              const Icon = ICONS[habit.iconName] || Star;
-              const todayEntry = todayHabits?.find(h => h.type === habit.type);
-              const isEditing = addingHabit === habit.id;
-              const progress = todayEntry ? (todayEntry.value / habit.max) * 100 : 0;
+              const Icon = ICON_MAP[habit.iconName] || ICON_MAP['Star'];
+              const streak = getStreakData(habit.type);
 
               return (
                 <motion.div
                   key={habit.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ delay: i * 0.05 }}
                   className="glass-card-static"
-                  style={{ padding: 20, position: 'relative' }}
+                  style={{ padding: 20 }}
                 >
-                  {isManageMode && (
-                    <button 
-                      onClick={() => handleRemoveHabit(habit.id)}
-                      style={{ position: 'absolute', top: -8, right: -8, background: 'var(--pink-400)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', zIndex: 10 }}
-                    >
-                      <X size={12} />
-                    </button>
-                  )}
-                  
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isEditing ? 16 : 0, opacity: isManageMode ? 0.6 : 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: '50%',
-                        background: todayEntry ? `${habit.color}25` : 'var(--neutral-100)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.3s',
-                      }}>
-                        <Icon size={20} style={{ color: todayEntry ? habit.color : 'var(--neutral-400)' }} />
+                  {/* Header */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+                    <div style={{
+                      width: 38, height: 38, borderRadius: '50%',
+                      background: `${habit.color}20`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      <Icon size={18} style={{ color: habit.color }} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--neutral-700)' }}>{habit.label}</h3>
+                    </div>
+                    <div style={{ display: 'flex', gap: 16 }}>
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'center' }}>
+                          <Flame size={14} style={{ color: streak.current > 0 ? 'var(--pink-400)' : 'var(--neutral-300)' }} />
+                          <span style={{ fontSize: 18, fontWeight: 700, color: streak.current > 0 ? 'var(--pink-400)' : 'var(--neutral-400)' }}>{streak.current}</span>
+                        </div>
+                        <p style={{ fontSize: 9, color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Current</p>
                       </div>
-                      <div>
-                        <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--neutral-700)' }}>
-                          {habit.label}
-                        </h3>
-                        {todayEntry ? (
-                          <span style={{ fontSize: 12, color: habit.color, fontWeight: 500 }}>
-                            {todayEntry.value} {habit.unit} today ✓
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: 12, color: 'var(--neutral-400)' }}>
-                            Not tracked yet today
-                          </span>
-                        )}
+                      <div style={{ textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 3, justifyContent: 'center' }}>
+                          <Trophy size={14} style={{ color: streak.best > 0 ? 'var(--gold-300)' : 'var(--neutral-300)' }} />
+                          <span style={{ fontSize: 18, fontWeight: 700, color: streak.best > 0 ? 'var(--gold-300)' : 'var(--neutral-400)' }}>{streak.best}</span>
+                        </div>
+                        <p style={{ fontSize: 9, color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Best</p>
                       </div>
                     </div>
-
-                    {!isManageMode && (
-                      <button
-                        onClick={() => {
-                          if (isEditing) {
-                            setAddingHabit(null);
-                          } else {
-                            setAddingHabit(habit.id);
-                            setHabitValue(todayEntry?.value || 0);
-                          }
-                        }}
-                        style={{
-                          width: 36,
-                          height: 36,
-                          borderRadius: '50%',
-                          border: todayEntry ? `2px solid ${habit.color}` : '2px solid var(--neutral-200)',
-                          background: todayEntry ? `${habit.color}15` : 'transparent',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          color: todayEntry ? habit.color : 'var(--neutral-400)',
-                        }}
-                      >
-                        {todayEntry ? <Check size={16} /> : <Plus size={16} />}
-                      </button>
-                    )}
                   </div>
 
-                  {/* Progress bar */}
-                  {todayEntry && !isEditing && !isManageMode && (
-                    <div style={{
-                      marginTop: 12,
-                      height: 4,
-                      background: 'var(--neutral-100)',
-                      borderRadius: 2,
-                      overflow: 'hidden',
-                    }}>
+                  {/* 30-day heatmap */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(15, 1fr)', gap: 3 }}>
+                    {streak.last30.map((tracked, idx) => (
                       <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(progress, 100)}%` }}
-                        transition={{ delay: 0.3, duration: 0.6 }}
+                        key={idx}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: idx * 0.015 }}
+                        title={format(subDays(new Date(), 29 - idx), 'MMM d')}
                         style={{
-                          height: '100%',
-                          background: habit.color,
-                          borderRadius: 2,
+                          aspectRatio: '1',
+                          borderRadius: 4,
+                          background: tracked ? habit.color : 'var(--neutral-100)',
+                          opacity: tracked ? 1 : 0.4,
+                          transition: 'background 0.2s',
                         }}
                       />
-                    </div>
-                  )}
-
-                  {/* Edit slider */}
-                  {isEditing && !isManageMode && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                    >
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: 12, color: 'var(--neutral-500)' }}>
-                          {habitValue} {habit.unit}
-                        </span>
-                        <span style={{ fontSize: 12, color: 'var(--neutral-400)' }}>
-                          max: {habit.max}
-                        </span>
-                      </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max={habit.max}
-                        value={habitValue}
-                        onChange={e => setHabitValue(Number(e.target.value))}
-                        style={{ width: '100%', marginBottom: 12 }}
-                      />
-                      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                        <button className="btn-ghost" onClick={() => handleSaveHabitValue(habit.type)} style={{ fontSize: 13, color: 'var(--pink-500)' }}>
-                          Clear
-                        </button>
-                        <button className="btn-primary" onClick={() => handleSaveHabitValue(habit.type)} style={{ fontSize: 13, padding: '8px 16px' }}>
-                          Save
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
+                    ))}
+                  </div>
+                  <p style={{ fontSize: 10, color: 'var(--neutral-400)', marginTop: 6, textAlign: 'right' }}>
+                    {streak.last30.filter(Boolean).length}/30 days tracked
+                  </p>
                 </motion.div>
               );
             })}
-          </AnimatePresence>
-        </div>
-
-        {/* Add Habit Modal */}
-        {showAddModal && (
-          <div style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 999,
-            background: 'rgba(0,0,0,0.5)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 24,
-          }}>
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="glass-card"
-              style={{ width: '100%', maxWidth: 400, padding: 24, background: 'var(--background)' }}
-            >
-              <h3 style={{ fontSize: 18, fontWeight: 600, color: 'var(--neutral-700)', marginBottom: 16 }}>
-                Create Custom Habit
-              </h3>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 24 }}>
-                <div>
-                  <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Habit Name</label>
-                  <input type="text" className="input" placeholder="e.g. Journaling" value={newLabel} onChange={e => setNewLabel(e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Unit</label>
-                  <input type="text" className="input" placeholder="e.g. pages, mins, times" value={newUnit} onChange={e => setNewUnit(e.target.value)} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Daily Goal (Max)</label>
-                  <input type="number" className="input" value={newMax} onChange={e => setNewMax(Number(e.target.value))} />
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                <button className="btn-ghost" onClick={() => setShowAddModal(false)}>Cancel</button>
-                <button className="btn-primary" onClick={handleAddCustomHabit} disabled={!newLabel.trim()}>Create</button>
-              </div>
-            </motion.div>
           </div>
         )}
+
+        {/* ═══════ ADD HABIT MODAL ═══════ */}
+        <AnimatePresence>
+          {showAddModal && (
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 999,
+                background: 'rgba(0,0,0,0.5)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', padding: 24,
+              }}
+              onClick={() => setShowAddModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="glass-card"
+                style={{ width: '100%', maxWidth: 400, padding: 24, background: 'var(--cream-50)' }}
+                onClick={e => e.stopPropagation()}
+              >
+                <h3 style={{ fontSize: 18, fontWeight: 600, color: 'var(--neutral-700)', marginBottom: 16 }}>
+                  Create Custom Ritual
+                </h3>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
+                  <div>
+                    <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Habit Name</label>
+                    <input type="text" className="input" placeholder="e.g. Journaling" value={newLabel} onChange={e => setNewLabel(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Icon</label>
+                    <IconPicker selected={newIconName} onChange={setNewIconName} color={newColor} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 6, display: 'block' }}>Color</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {HABIT_COLORS.map(c => (
+                        <button
+                          key={c}
+                          onClick={() => setNewColor(c)}
+                          style={{
+                            width: 32, height: 32, borderRadius: '50%',
+                            background: c, border: newColor === c ? '3px solid var(--neutral-700)' : '2px solid var(--neutral-200)',
+                            cursor: 'pointer', transition: 'all 0.15s',
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Unit</label>
+                    <input type="text" className="input" placeholder="e.g. pages, mins, times" value={newUnit} onChange={e => setNewUnit(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Daily Goal (Max)</label>
+                    <input type="number" className="input" value={newMax} onChange={e => setNewMax(Number(e.target.value))} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+                  <button className="btn-ghost" onClick={() => setShowAddModal(false)}>Cancel</button>
+                  <button className="btn-primary" onClick={handleAddCustomHabit} disabled={!newLabel.trim()}>Create</button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AppShell>
   );
