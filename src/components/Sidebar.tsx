@@ -4,10 +4,10 @@ import { useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BookOpen, BarChart3, Calendar, Camera, Moon,
+  BookOpen, BarChart3, Calendar,
   Heart, Sparkles, MessageCircle, Settings, Search,
   Menu, X, Feather, Image as ImageIcon, ListChecks,
-  Palette, Rewind
+  Palette, Rewind, Wind
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
@@ -17,12 +17,8 @@ const NAV_ITEMS = [
   { href: '/mood', label: 'Mood', icon: BarChart3 },
   { href: '/calendar', label: 'Calendar', icon: Calendar },
   { href: '/photos', label: 'Photos', icon: ImageIcon },
-  { href: '/dream', label: 'Dream Space', icon: Moon },
-  { href: '/habits', label: 'Habits', icon: ListChecks },
-  { href: '/gratitude', label: 'Gratitude', icon: Heart },
-  { href: '/prompts', label: 'Prompts', icon: Sparkles },
-  { href: '/chat', label: 'AI Chat', icon: MessageCircle },
-  { href: '/rewind', label: 'Rewind', icon: Rewind },
+  { href: '/habits', label: 'Rituals', icon: ListChecks },
+  { href: '/breathe', label: 'Calm Corner', icon: Wind },
   { href: '/customize', label: 'Customize', icon: Palette },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
@@ -30,7 +26,7 @@ const NAV_ITEMS = [
 const MOBILE_NAV = [
   { href: '/', label: 'Journal', icon: BookOpen },
   { href: '/mood', label: 'Mood', icon: BarChart3 },
-  { href: '/dream', label: 'Dream', icon: Moon },
+  { href: '/habits', label: 'Rituals', icon: ListChecks },
   { href: '/timeline', label: 'Timeline', icon: Feather },
   { href: '/settings', label: 'More', icon: Menu },
 ];
@@ -48,33 +44,19 @@ export default function Sidebar() {
         <div style={{ padding: '24px 20px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
+              width: 36, height: 36, borderRadius: '50%',
               background: 'linear-gradient(135deg, var(--pink-300), var(--lavender-400))',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <Sparkles size={18} color="white" />
             </div>
-            <span className="text-gradient" style={{
-              fontSize: 22,
-              fontWeight: 700,
-              letterSpacing: '2px',
-              fontFamily: 'var(--font-body)',
-            }}>
+            <span className="text-gradient" style={{ fontSize: 22, fontWeight: 700, letterSpacing: '2px', fontFamily: 'var(--font-body)' }}>
               LUMINA
             </span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-            <p style={{
-              fontSize: 11,
-              color: 'var(--neutral-400)',
-              paddingLeft: 46,
-              fontStyle: 'italic',
-            }}>
-              your emotional garden
+            <p style={{ fontSize: 11, color: 'var(--neutral-400)', paddingLeft: 46, fontStyle: 'italic' }}>
+              your emotional OS
             </p>
             <NotificationBell />
           </div>
@@ -85,17 +67,7 @@ export default function Sidebar() {
           <button
             onClick={() => router.push('/search')}
             className="btn-ghost"
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              justifyContent: 'flex-start',
-              color: 'var(--neutral-400)',
-              fontSize: 13,
-              border: '1px solid var(--neutral-200)',
-              borderRadius: 'var(--radius-md)',
-            }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, justifyContent: 'flex-start', color: 'var(--neutral-400)', fontSize: 13, border: '1px solid var(--neutral-200)', borderRadius: 'var(--radius-md)' }}
           >
             <Search size={14} />
             Search memories...
@@ -122,13 +94,7 @@ export default function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div style={{
-          padding: '16px 20px',
-          borderTop: '1px solid var(--glass-border)',
-          fontSize: 11,
-          color: 'var(--neutral-400)',
-          textAlign: 'center',
-        }}>
+        <div style={{ padding: '16px 20px', borderTop: '1px solid var(--glass-border)', fontSize: 11, color: 'var(--neutral-400)', textAlign: 'center' }}>
           ✨ Your thoughts are safe here
         </div>
       </aside>

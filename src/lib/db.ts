@@ -17,7 +17,7 @@ export interface JournalEntry {
   customEmotions: string[];
   tags: string[];
   location?: string;
-  isDreamSpace?: boolean;
+  location?: string;
   isLocked?: boolean;
   isVoiceEntry?: boolean;
   // ── Emotion Scoring ──
@@ -151,7 +151,7 @@ class LuminaDB extends Dexie {
     super('lumina');
 
     this.version(1).stores({
-      entries: '++id, title, mood, energy, anxiety, createdAt, updatedAt, *tags, isDreamSpace, isLocked',
+      entries: '++id, title, mood, energy, anxiety, createdAt, updatedAt, *tags, isLocked',
       media: '++id, entryId, type, createdAt',
       moods: '++id, score, energy, anxiety, timestamp, entryId',
       prompts: '++id, category, isFavorite',
@@ -163,7 +163,7 @@ class LuminaDB extends Dexie {
     });
 
     this.version(2).stores({
-      entries: '++id, title, mood, energy, anxiety, createdAt, updatedAt, *tags, isDreamSpace, isLocked, isHighIntensity, overallIntensity, isVoiceEntry',
+      entries: '++id, title, mood, energy, anxiety, createdAt, updatedAt, *tags, isLocked, isHighIntensity, overallIntensity, isVoiceEntry',
       media: '++id, entryId, type, createdAt',
       moods: '++id, score, energy, anxiety, timestamp, entryId',
       prompts: '++id, category, isFavorite',

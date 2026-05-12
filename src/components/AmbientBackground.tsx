@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { db } from '@/lib/db';
 import { MOOD_CONFIG } from '@/lib/utils';
 
-export default function AmbientBackground({ dreamMode = false }: { dreamMode?: boolean }) {
+export default function AmbientBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [latestMood, setLatestMood] = useState<number>(3);
 
@@ -22,15 +22,10 @@ export default function AmbientBackground({ dreamMode = false }: { dreamMode?: b
 
     let animationId: number;
     const particles: Particle[] = [];
-    const stars: Star[] = [];
 
     interface Particle {
       x: number; y: number; size: number; speedY: number; speedX: number;
       opacity: number; color: string; life: number; maxLife: number;
-    }
-
-    interface Star {
-      x: number; y: number; size: number; twinkleSpeed: number; phase: number;
     }
 
     function resize() {
@@ -48,23 +43,7 @@ export default function AmbientBackground({ dreamMode = false }: { dreamMode?: b
     };
 
     const baseColor = hexToRgb(MOOD_CONFIG[latestMood as keyof typeof MOOD_CONFIG]?.color || '#E8C8A0');
-
-    const colors = dreamMode
-      ? ['rgba(196,181,224,', 'rgba(168,146,208,', 'rgba(139,111,192,']
-      : [baseColor, 'rgba(196,181,224,', 'rgba(255,213,128,'];
-
-    // Initialize stars for dream mode
-    if (dreamMode) {
-      for (let i = 0; i < 100; i++) {
-        stars.push({
-          x: Math.random() * canvas.width,
-          y: Math.random() * canvas.height,
-          size: Math.random() * 2 + 0.5,
-          twinkleSpeed: Math.random() * 0.02 + 0.005,
-          phase: Math.random() * Math.PI * 2,
-        });
-      }
-    }
+    const colors = [baseColor, 'rgba(196,181,224,', 'rgba(255,213,128,'];
 
     function spawnParticle() {
       const color = colors[Math.floor(Math.random() * colors.length)];
@@ -87,20 +66,8 @@ export default function AmbientBackground({ dreamMode = false }: { dreamMode?: b
       frame++;
 
       // Spawn particles
-      if (frame % (dreamMode ? 8 : 15) === 0 && particles.length < (dreamMode ? 40 : 25)) {
+      if (frame % 15 === 0 && particles.length < 25) {
         spawnParticle();
-      }
-
-      // Draw stars in dream mode
-      if (dreamMode) {
-        stars.forEach(star => {
-          const twinkle = Math.sin(frame * star.twinkleSpeed + star.phase);
-          const opacity = 0.3 + twinkle * 0.4;
-          ctx!.beginPath();
-          ctx!.arc(star.x, star.y, star.size, 0, Math.PI * 2);
-          ctx!.fillStyle = `rgba(255, 255, 255, ${Math.max(0, opacity)})`;
-          ctx!.fill();
-        });
       }
 
       // Update and draw particles
@@ -128,12 +95,10 @@ export default function AmbientBackground({ dreamMode = false }: { dreamMode?: b
         ctx!.fill();
 
         // Glow effect
-        if (!dreamMode) {
-          ctx!.beginPath();
-          ctx!.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
-          ctx!.fillStyle = `${p.color}${p.opacity * 0.1})`;
-          ctx!.fill();
-        }
+        ctx!.beginPath();
+        ctx!.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+        ctx!.fillStyle = `${p.color}${p.opacity * 0.1})`;
+        ctx!.fill();
       }
 
       animationId = requestAnimationFrame(animate);
@@ -141,42 +106,17 @@ export default function AmbientBackground({ dreamMode = false }: { dreamMode?: b
 
     animate();
 
-    // Typing effect for Dream Mode
-    const handleTyping = (e: KeyboardEvent) => {
-      if (!dreamMode || e.key.length !== 1) return; // Only printable chars
-      
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      for(let j=0; j<2; j++) {
-        particles.push({
-          x: Math.random() * canvas!.width,
-          y: canvas!.height * 0.7 + (Math.random() * 100), // Near the bottom input area
-          size: Math.random() * 3 + 2,
-          speedY: -(Math.random() * 2 + 1), // Faster upward speed
-          speedX: (Math.random() - 0.5) * 2,
-          opacity: 0.8,
-          color,
-          life: 0,
-          maxLife: Math.random() * 100 + 50, // Shorter life
-        });
-      }
-    };
-    
-    if (dreamMode) {
-      window.addEventListener('keydown', handleTyping);
-    }
-
     return () => {
       cancelAnimationFrame(animationId);
       window.removeEventListener('resize', resize);
-      if (dreamMode) window.removeEventListener('keydown', handleTyping);
     };
-  }, [dreamMode, latestMood]);
+  }, [latestMood]);
 
   return (
     <div 
       className="ambient-bg" 
       style={{ 
-        background: !dreamMode ? `radial-gradient(circle at 50% 0%, ${MOOD_CONFIG[latestMood as keyof typeof MOOD_CONFIG]?.color}22 0%, transparent 70%)` : undefined 
+        background: `radial-gradient(circle at 50% 0%, ${MOOD_CONFIG[latestMood as keyof typeof MOOD_CONFIG]?.color}22 0%, transparent 70%)` 
       }}
     >
       <canvas

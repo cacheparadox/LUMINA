@@ -21,7 +21,7 @@ export const EMOTION_STICKERS = [
 
 export const TAG_SUGGESTIONS = [
   'personal', 'work', 'family', 'friends', 'health', 'creativity',
-  'relationships', 'growth', 'anxiety', 'gratitude', 'dream', 'milestone',
+  'relationships', 'growth', 'anxiety', 'gratitude', 'milestone',
   'travel', 'nature', 'music', 'reading', 'workout', 'meditation',
 ];
 

@@ -3,36 +3,35 @@
 import Sidebar from '@/components/Sidebar';
 import AmbientBackground from '@/components/AmbientBackground';
 import QuickCapture from '@/components/QuickCapture';
-import AmbientAudio from '@/components/AmbientAudio';
 import { usePathname } from 'next/navigation';
+
+const HIDE_FAB_ROUTES = ['/new', '/settings', '/customize', '/chat', '/breathe'];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isDreamSpace = pathname === '/dream';
+  const showFab = !HIDE_FAB_ROUTES.includes(pathname) && !pathname.startsWith('/entry/');
 
   return (
     <>
-      <AmbientBackground dreamMode={isDreamSpace} />
-      {!isDreamSpace && <Sidebar />}
+      <AmbientBackground />
+      <Sidebar />
       <main style={{
-        marginLeft: isDreamSpace ? 0 : undefined,
-        paddingBottom: isDreamSpace ? 0 : 80,
+        paddingBottom: 80,
         minHeight: '100vh',
         position: 'relative',
         zIndex: 1,
       }}
-        className={isDreamSpace ? '' : 'md:ml-[240px]'}
+        className="md:ml-[240px]"
       >
         <div style={{
-          maxWidth: isDreamSpace ? '100%' : 900,
-          margin: isDreamSpace ? 0 : '0 auto',
-          padding: isDreamSpace ? 0 : '24px 20px',
+          maxWidth: 900,
+          margin: '0 auto',
+          padding: '24px 20px',
         }}>
           {children}
         </div>
       </main>
-      {!isDreamSpace && !['/new', '/settings', '/customize', '/chat'].includes(pathname) && !pathname.startsWith('/entry/') && <QuickCapture />}
-      <AmbientAudio />
+      {showFab && <QuickCapture />}
     </>
   );
 }

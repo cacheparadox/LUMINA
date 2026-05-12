@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { motion } from 'framer-motion';
-import { db, computeIntensity, isHighIntensityEntry } from '@/lib/db';
+import { motion, AnimatePresence } from 'framer-motion';
+import { db, computeIntensity, isHighIntensityEntry, getSetting } from '@/lib/db';
 import type { EmotionScore } from '@/lib/db';
 import { callLLM, buildEmotionScoringPrompt, parseEmotionScores, getAIConfig } from '@/lib/ai';
 import AppShell from '@/components/AppShell';
@@ -15,6 +15,124 @@ import {
   ArrowLeft, Save, Tag, MapPin, Image as ImageIcon,
   Mic, X, ChevronDown, ChevronUp, Sparkles, Loader2
 } from 'lucide-react';
+
+const MOOD_QUOTES: Record<number, string[]> = {
+  1: [ // Awful
+    "Even the darkest night will end, and the sun will rise.",
+    "It's okay to not be okay. You're still here, and that matters.",
+    "Storms don't last forever. You are stronger than you know.",
+    "This too shall pass. Be gentle with yourself today.",
+    "Breathe. You're just having a bad day, not a bad life.",
+    "Your feelings are valid, but they are not your permanent reality.",
+    "Softness is not weakness. It takes courage to stay delicate in a tough world.",
+    "Healing is not linear. Give yourself permission to rest.",
+    "You are doing the best you can with what you have.",
+    "Small steps still move you forward.",
+    "The sun is a daily reminder that we too can rise from the darkness.",
+    "You don't have to carry the whole world on your shoulders.",
+    "Rest is productive. Your worth is not tied to your output.",
+    "Courage doesn't always roar. Sometimes it's the quiet voice at the end of the day.",
+    "You have survived 100% of your hardest days.",
+    "Be your own safest place today.",
+    "It's okay to let go of what you can't control.",
+    "A seed must spend time in the dark before it can bloom.",
+    "You are enough, exactly as you are in this moment.",
+    "This feeling is a visitor. It will leave when it's ready.",
+    "Give yourself the same grace you give to others."
+  ],
+  2: [ // Bad
+    "Bad days build good people. You're growing through this.",
+    "You don't have to be positive all the time. Feel what you feel.",
+    "The wound is where the light enters you. — Rumi",
+    "Some days you survive, and that is enough.",
+    "Everything you're feeling is teaching you something.",
+    "Growth often happens in the uncomfortable silences.",
+    "You are allowed to take up space, even when you're not at your best.",
+    "One day, this will be a story of how you overcame.",
+    "In the middle of difficulty lies opportunity. — Einstein",
+    "Be patient with your process.",
+    "You are not your mistakes. You are the person who learns from them.",
+    "Flowers need rain as much as they need sun.",
+    "Trust the timing of your life.",
+    "Don't compare your behind-the-scenes with everyone else's highlight reel.",
+    "Your value is inherent. It cannot be earned or lost.",
+    "You are allowed to start over as many times as you need.",
+    "Sometimes the most productive thing you can do is relax.",
+    "The forest would be very silent if only the best birds sang.",
+    "You are a work in progress, and that is beautiful.",
+    "Keep going. The view is better from the next hill.",
+    "You are stronger than the things that try to break you."
+  ],
+  3: [ // Okay
+    "You're exactly where you need to be right now.",
+    "Ordinary days are the ones we remember most fondly.",
+    "Life is a collection of moments. You just captured one.",
+    "Stillness is not the absence of motion, but the presence of peace.",
+    "Balance is not something you find, it's something you create.",
+    "There is magic in the mundane.",
+    "Appreciate the quiet moments. They are the anchors of life.",
+    "Consistency is the quietest form of greatness.",
+    "Root yourself in the present. The future can wait.",
+    "Every day holds a small miracle if you look closely enough.",
+    "Peace is a choice you make, one breath at a time.",
+    "You are the architect of your own calm.",
+    "Contentment is a superpower in a world that always wants more.",
+    "Enjoy the space between 'no longer' and 'not yet'.",
+    "The middle path is often the most beautiful one.",
+    "Simple days are soul food.",
+    "Find joy in the rhythm of the ordinary.",
+    "You don't need a reason to feel at peace.",
+    "Life doesn't have to be perfect to be wonderful.",
+    "Breathe in the now. It's all we truly have.",
+    "Slow down. You're not missing anything."
+  ],
+  4: [ // Good
+    "Your light is contagious. Keep shining.",
+    "Good energy attracts good things. Today proved it.",
+    "Happiness is not a destination—it's a way of traveling.",
+    "This feeling? You deserve it. Remember it.",
+    "Optimism is a radical act of self-care.",
+    "You are creating a life you love, one day at a time.",
+    "Success is falling in love with the process.",
+    "Your growth is visible. Be proud of yourself.",
+    "Confidence is not 'they will like me', it's 'I'll be fine if they don't'.",
+    "Celebrate the small wins. They lead to the big ones.",
+    "You are blooming in your own time.",
+    "Positivity is like a muscle. The more you use it, the stronger it gets.",
+    "Life is rewarding your courage.",
+    "Kindness is the ultimate form of strength.",
+    "You are making an impact, even when you don't see it.",
+    "Keep that spark. It's what makes you, you.",
+    "The world needs more of your specific kind of magic.",
+    "You are attracting everything you've been working for.",
+    "Joy is what happens when we allow ourselves to recognize how good things are.",
+    "Your future is as bright as your faith.",
+    "You are a magnet for miracles."
+  ],
+  5: [ // Amazing
+    "You are radiant today. The universe feels it too.",
+    "Moments like these are what life is made of. ✨",
+    "Bottled lightning — that's what today feels like.",
+    "When was the last time you felt this alive? Save this feeling.",
+    "Abundance is your natural state.",
+    "You are standing in the full light of your own potential.",
+    "Anything is possible when you believe in your own power.",
+    "Gratitude turns what we have into enough, and more.",
+    "You are a masterpiece in progress.",
+    "The energy you're putting out is coming back ten-fold.",
+    "This is your season of growth and joy.",
+    "You have everything you need to create the life of your dreams.",
+    "Today was a victory. Own it.",
+    "Your soul is singing today. Listen to it.",
+    "You are a force of nature.",
+    "Infinite possibilities are opening up for you.",
+    "The sky isn't the limit; it's just the beginning.",
+    "You are at the peak of your powers.",
+    "Magic is something you make, and you're making it now.",
+    "Bliss is your birthright.",
+    "Shine on, you brilliant human. The world is watching."
+  ],
+};
 
 function NewEntryForm() {
   const router = useRouter();
@@ -40,6 +158,7 @@ function NewEntryForm() {
   const [audioBlobs, setAudioBlobs] = useState<{ blob: Blob; duration: number }[]>([]);
   const [isVoiceEntry, setIsVoiceEntry] = useState(false);
   const [recentTags, setRecentTags] = useState<string[]>(TAG_SUGGESTIONS.slice(0, 8));
+  const [savedQuote, setSavedQuote] = useState<string | null>(null);
   const contentRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -127,7 +246,31 @@ function NewEntryForm() {
       // AI Emotion Scoring (async, non-blocking)
       scoreEmotions(entryId as number, content);
 
-      router.push('/');
+      // Ntfy Integration
+      const ntfyEnabled = await getSetting('ntfy_enabled') === 'true';
+      const ntfyChannel = await getSetting('ntfy_channel');
+      if (ntfyEnabled && ntfyChannel) {
+        try {
+          const moodEmoji = MOOD_CONFIG[mood as keyof typeof MOOD_CONFIG].emoji;
+          fetch(`https://ntfy.sh/${ntfyChannel}`, {
+            method: 'POST',
+            body: `New Memory: ${title || 'Untitled'}\nMood: ${moodEmoji}\nEnergy: ${energy}/5\nAnxiety: ${anxiety}/5\nTags: ${tags.join(', ')}\n\n${content}`,
+            headers: {
+              'Title': 'LUMINA Entry Saved',
+              'Tags': 'memo,brain,sparkles',
+              'Priority': 'default'
+            }
+          });
+        } catch (e) {
+          console.error('Ntfy send failed:', e);
+        }
+      }
+
+      // Show mood quote instead of navigating immediately
+      const quotes = MOOD_QUOTES[mood as keyof typeof MOOD_QUOTES] || MOOD_QUOTES[3];
+      const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+      setSavedQuote(randomQuote);
+      setSaving(false);
     } catch (err) {
       console.error('Failed to save entry:', err);
       setSaving(false);
@@ -543,6 +686,53 @@ function NewEntryForm() {
             }}
           />
         )}
+
+        {/* Post-Save Mood Quote Overlay */}
+        <AnimatePresence>
+          {savedQuote && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => router.push('/')}
+              style={{
+                position: 'fixed',
+                inset: 0,
+                zIndex: 10000,
+                background: 'var(--background)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 40,
+                textAlign: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+              >
+                <Sparkles size={48} style={{ color: MOOD_CONFIG[mood as keyof typeof MOOD_CONFIG].color, marginBottom: 32 }} />
+                <h2 style={{
+                  fontSize: 24,
+                  fontWeight: 600,
+                  color: 'var(--neutral-800)',
+                  lineHeight: 1.5,
+                  fontFamily: 'var(--font-journal)',
+                  maxWidth: 500,
+                  marginBottom: 40,
+                }}>
+                  "{savedQuote}"
+                </h2>
+                <p style={{ fontSize: 13, color: 'var(--neutral-400)', letterSpacing: 1, textTransform: 'uppercase' }}>
+                  Tap anywhere to continue
+                </p>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </AppShell>
   );

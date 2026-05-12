@@ -20,6 +20,8 @@ export default function SettingsPage() {
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [autoBackup, setAutoBackup] = useState(false);
+  const [ntfyEnabled, setNtfyEnabled] = useState(false);
+  const [ntfyChannel, setNtfyChannel] = useState('');
 
   useEffect(() => {
     const config = getAIConfig();
@@ -30,6 +32,8 @@ export default function SettingsPage() {
     db.entries.count().then(setEntryCount);
     getSetting('pin_enabled').then(v => setPinEnabled(v === 'true'));
     getSetting('auto_backup').then(v => setAutoBackup(v === 'true'));
+    getSetting('ntfy_enabled').then(v => setNtfyEnabled(v === 'true'));
+    getSetting('ntfy_channel').then(v => setNtfyChannel(v || ''));
     setNotifEnabled(typeof window !== 'undefined' && Notification.permission === 'granted');
   }, []);
 
@@ -65,6 +69,18 @@ export default function SettingsPage() {
       await setSetting('auto_backup', 'true');
       setAutoBackup(true);
     }
+  };
+
+  const handleToggleNtfy = async () => {
+    const newState = !ntfyEnabled;
+    await setSetting('ntfy_enabled', newState ? 'true' : 'false');
+    setNtfyEnabled(newState);
+  };
+
+  const handleSaveNtfyChannel = async () => {
+    await setSetting('ntfy_channel', ntfyChannel);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   };
 
   const handleToggleNotif = async () => {
@@ -205,6 +221,50 @@ export default function SettingsPage() {
               }} />
             </button>
           </div>
+        </motion.div>
+
+        {/* Ntfy Integration */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card-static" style={{ padding: 24, marginBottom: 20 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--neutral-700)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <RefreshCw size={18} style={{ color: 'var(--pink-400)' }} /> Ntfy Integration
+          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>Enable Ntfy Alerts</p>
+              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Send entries to a custom Ntfy channel</p>
+            </div>
+            <button onClick={handleToggleNtfy} style={{
+              width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
+              background: ntfyEnabled ? 'linear-gradient(135deg, var(--pink-300), var(--lavender-400))' : 'var(--neutral-200)',
+              position: 'relative', transition: 'all 0.3s',
+            }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: '50%', background: 'white',
+                position: 'absolute', top: 3,
+                left: ntfyEnabled ? 25 : 3,
+                transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              }} />
+            </button>
+          </div>
+          {ntfyEnabled && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+              <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Ntfy Channel Name</label>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  className="input"
+                  placeholder="e.g. my_journal_channel"
+                  value={ntfyChannel}
+                  onChange={e => setNtfyChannel(e.target.value)}
+                  style={{ flex: 1 }}
+                />
+                <button className="btn-primary" onClick={handleSaveNtfyChannel} style={{ padding: '0 16px' }}>Save</button>
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 8 }}>
+                Entries will be sent to <code>https://ntfy.sh/&#123;channel&#125;</code>
+              </p>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* AI Configuration */}

@@ -39,6 +39,7 @@ export default function HabitsPage() {
   const [newMax, setNewMax] = useState(10);
   const [newIconName, setNewIconName] = useState('Star');
   const [newColor, setNewColor] = useState('var(--pink-400)');
+  const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
 
   useEffect(() => {
     getSetting('custom_habits').then(val => {
@@ -83,40 +84,77 @@ export default function HabitsPage() {
 
   const handleAddCustomHabit = () => {
     if (!newLabel.trim()) return;
-    const newId = 'custom_' + Date.now();
-    const newList = [...habitList, {
-      id: newId, type: newId,
-      label: newLabel.trim(),
-      iconName: newIconName,
-      unit: newUnit.trim() || 'times',
-      max: newMax || 10,
-      color: newColor,
-    }];
-    saveHabitList(newList);
+    
+    if (editingHabitId) {
+      const newList = habitList.map(h => h.id === editingHabitId ? {
+        ...h,
+        label: newLabel.trim(),
+        iconName: newIconName,
+        unit: newUnit.trim() || 'times',
+        max: newMax || 10,
+        color: newColor,
+      } : h);
+      saveHabitList(newList);
+    } else {
+      const newId = 'custom_' + Date.now();
+      const newList = [...habitList, {
+        id: newId, type: newId,
+        label: newLabel.trim(),
+        iconName: newIconName,
+        unit: newUnit.trim() || 'times',
+        max: newMax || 10,
+        color: newColor,
+      }];
+      saveHabitList(newList);
+    }
+    
     setShowAddModal(false);
+    setEditingHabitId(null);
     setNewLabel(''); setNewUnit(''); setNewMax(10);
     setNewIconName('Star'); setNewColor('var(--pink-400)');
+  };
+
+  const handleEditHabit = (habit: typeof DEFAULT_HABITS[0]) => {
+    setEditingHabitId(habit.id);
+    setNewLabel(habit.label);
+    setNewUnit(habit.unit);
+    setNewMax(habit.max);
+    setNewIconName(habit.iconName);
+    setNewColor(habit.color);
+    setShowAddModal(true);
+  };
+
+  const moveHabit = (index: number, direction: 'up' | 'down') => {
+    const newList = [...habitList];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    if (targetIndex < 0 || targetIndex >= newList.length) return;
+    
+    const [movedItem] = newList.splice(index, 1);
+    newList.splice(targetIndex, 0, movedItem);
+    saveHabitList(newList);
   };
 
   const handleRemoveHabit = (id: string) => {
     saveHabitList(habitList.filter(h => h.id !== id));
   };
 
-  // Streak calculations
+  // Streak calculations — only considers live habit types
+  const liveTypes = new Set(habitList.map(h => h.type));
+
   const getStreakData = (type: string) => {
     if (!allHabits) return { current: 0, best: 0, last30: Array(30).fill(false) };
+    // Only entries matching this type
     const typeHabits = allHabits.filter(h => h.type === type);
     const last30: boolean[] = [];
     for (let i = 29; i >= 0; i--) {
       const day = startOfDay(subDays(new Date(), i));
+      // Deduplicate: just check if ANY entry exists for this type on this day
       last30.push(typeHabits.some(h => isSameDay(new Date(h.timestamp), day)));
     }
-    // Current streak (counting back from today)
     let current = 0;
     for (let i = last30.length - 1; i >= 0; i--) {
       if (last30[i]) current++; else break;
     }
-    // Best streak
     let best = 0, run = 0;
     for (const tracked of last30) {
       if (tracked) { run++; best = Math.max(best, run); } else { run = 0; }
@@ -124,7 +162,13 @@ export default function HabitsPage() {
     return { current, best, last30 };
   };
 
-  const totalTrackedToday = todayHabits?.length || 0;
+  // Deduplicated today count: unique live habit types that have at least one entry today
+  const totalTrackedToday = useMemo(() => {
+    if (!todayHabits) return 0;
+    const trackedTypes = new Set(todayHabits.map(h => h.type));
+    // Only count types that are still in the live habit list
+    return [...trackedTypes].filter(t => liveTypes.has(t)).length;
+  }, [todayHabits, habitList]);
 
   return (
     <AppShell>
@@ -197,12 +241,34 @@ export default function HabitsPage() {
                     style={{ padding: 20, position: 'relative' }}
                   >
                     {isManageMode && (
-                      <button
-                        onClick={() => handleRemoveHabit(habit.id)}
-                        style={{ position: 'absolute', top: -8, right: -8, background: 'var(--pink-400)', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer', zIndex: 10 }}
-                      >
-                        <X size={12} />
-                      </button>
+                      <div style={{ position: 'absolute', top: 10, right: 10, display: 'flex', gap: 8, zIndex: 10 }}>
+                        <button
+                          onClick={() => moveHabit(i, 'up')}
+                          disabled={i === 0}
+                          style={{ background: 'var(--neutral-100)', color: 'var(--neutral-600)', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: i === 0 ? 'default' : 'pointer', opacity: i === 0 ? 0.3 : 1 }}
+                        >
+                          <ChevronLeft size={16} style={{ transform: 'rotate(90deg)' }} />
+                        </button>
+                        <button
+                          onClick={() => moveHabit(i, 'down')}
+                          disabled={i === habitList.length - 1}
+                          style={{ background: 'var(--neutral-100)', color: 'var(--neutral-600)', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: i === habitList.length - 1 ? 'default' : 'pointer', opacity: i === habitList.length - 1 ? 0.3 : 1 }}
+                        >
+                          <ChevronLeft size={16} style={{ transform: 'rotate(-90deg)' }} />
+                        </button>
+                        <button
+                          onClick={() => handleEditHabit(habit)}
+                          style={{ background: 'var(--gold-300)', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleRemoveHabit(habit.id)}
+                          style={{ background: 'var(--pink-400)', color: 'white', borderRadius: '50%', width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
                     )}
 
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isEditing ? 16 : 0, opacity: isManageMode ? 0.6 : 1 }}>
@@ -366,11 +432,11 @@ export default function HabitsPage() {
             <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               style={{
-                position: 'fixed', inset: 0, zIndex: 999,
+                position: 'fixed', inset: 0, zIndex: 10000,
                 background: 'rgba(0,0,0,0.5)', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', padding: 24,
               }}
-              onClick={() => setShowAddModal(false)}
+              onClick={() => { setShowAddModal(false); setEditingHabitId(null); }}
             >
               <motion.div
                 initial={{ scale: 0.9, opacity: 0 }}
@@ -381,7 +447,7 @@ export default function HabitsPage() {
                 onClick={e => e.stopPropagation()}
               >
                 <h3 style={{ fontSize: 18, fontWeight: 600, color: 'var(--neutral-700)', marginBottom: 16 }}>
-                  Create Custom Ritual
+                  {editingHabitId ? 'Edit Ritual' : 'Create Custom Ritual'}
                 </h3>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 24 }}>
@@ -420,8 +486,10 @@ export default function HabitsPage() {
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
-                  <button className="btn-ghost" onClick={() => setShowAddModal(false)}>Cancel</button>
-                  <button className="btn-primary" onClick={handleAddCustomHabit} disabled={!newLabel.trim()}>Create</button>
+                  <button className="btn-ghost" onClick={() => { setShowAddModal(false); setEditingHabitId(null); }}>Cancel</button>
+                  <button className="btn-primary" onClick={handleAddCustomHabit} disabled={!newLabel.trim()}>
+                    {editingHabitId ? 'Save Changes' : 'Create'}
+                  </button>
                 </div>
               </motion.div>
             </motion.div>

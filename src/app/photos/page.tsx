@@ -8,8 +8,10 @@ import AppShell from '@/components/AppShell';
 import { Image as ImageIcon, Heart, Filter } from 'lucide-react';
 import { MOOD_CONFIG } from '@/lib/utils';
 import { format } from 'date-fns';
+import { useRouter } from 'next/navigation';
 
 export default function PhotosPage() {
+  const router = useRouter();
   const media = useLiveQuery(
     () => db.media.where('type').equals('photo').reverse().toArray(),
     []
@@ -86,7 +88,7 @@ export default function PhotosPage() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
                 className="masonry-item"
-                onClick={() => setSelectedPhoto(photo.id!)}
+                onClick={() => photo.entry?.id ? router.push(`/entry/${photo.entry.id}`) : setSelectedPhoto(photo.id!)}
               >
                 <img
                   src={URL.createObjectURL(photo.blob)}
