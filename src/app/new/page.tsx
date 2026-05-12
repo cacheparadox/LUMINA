@@ -739,7 +739,7 @@ function NewEntryForm() {
                 <h2 style={{
                   fontSize: 24,
                   fontWeight: 600,
-                  color: 'var(--neutral-800)',
+                  color: 'var(--neutral-900)',
                   lineHeight: 1.5,
                   fontFamily: 'var(--font-journal)',
                   maxWidth: 500,
@@ -747,7 +747,7 @@ function NewEntryForm() {
                 }}>
                   "{savedQuote}"
                 </h2>
-                <p style={{ fontSize: 13, color: 'var(--neutral-400)', letterSpacing: 1, textTransform: 'uppercase' }}>
+                <p style={{ fontSize: 13, color: 'var(--neutral-500)', letterSpacing: 1, textTransform: 'uppercase' }}>
                   Tap anywhere to continue
                 </p>
               </motion.div>

@@ -79,12 +79,12 @@
 
 /* ── Theme Overrides ─────────────────────────── */
 
-[data-theme="dream"], [data-theme="midnight"] {
+[data-theme="midnight"], [data-theme="ocean"] {
   --cream-50: #0D0B14;
   --cream-100: #141020;
   --cream-200: #1C1630;
   --cream-300: #241C40;
-  --bg-rgb: 13, 11, 20; /* Matches --cream-50 */
+  --bg-rgb: 13, 11, 20; /* Dark RGB */
   --glass-bg: rgba(20, 16, 32, 0.85);
   --glass-border: rgba(100, 80, 150, 0.2);
   --glass-shadow: 0 8px 32px rgba(80, 40, 120, 0.25);
@@ -99,6 +99,13 @@
   --neutral-800: #EAE4F8;
   --neutral-900: #FAF4FF;
 }
+
+[data-theme="lavender"] { --bg-rgb: 245, 240, 250; }
+[data-theme="sage"] { --bg-rgb: 240, 245, 237; }
+[data-theme="rose"] { --bg-rgb: 255, 240, 243; }
+[data-theme="coffee"] { --bg-rgb: 250, 244, 232; }
+[data-theme="sunset"] { --bg-rgb: 255, 240, 230; }
+
 
 [data-theme="ocean"] {
   --cream-50: #0B1420;

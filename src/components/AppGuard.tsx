@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import SplashScreen from '@/components/SplashScreen';
 import PinLock from '@/components/PinLock';
+import Sidebar from '@/components/Sidebar';
+import AmbientBackground from '@/components/AmbientBackground';
+import QuickCapture from '@/components/QuickCapture';
+import { usePathname } from 'next/navigation';
 import { db, getSetting, getThemePref, seedPrompts } from '@/lib/db';
 
 const FONT_OPTIONS: Record<string, string> = {
@@ -12,7 +16,10 @@ const FONT_OPTIONS: Record<string, string> = {
   system: "-apple-system, BlinkMacSystemFont, sans-serif",
 };
 
+const HIDE_FAB_ROUTES = ['/new', '/settings', '/customize', '/chat', '/breathe'];
+
 export default function AppGuard({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
   const [showSplash, setShowSplash] = useState(() => {
     if (typeof window !== 'undefined' && sessionStorage.getItem('lumina_splash_shown')) {
       return false;
@@ -104,5 +111,29 @@ export default function AppGuard({ children }: { children: React.ReactNode }) {
 
   if (!ready) return null;
 
-  return <>{children}</>;
+  const showFab = !HIDE_FAB_ROUTES.includes(pathname) && !pathname.startsWith('/entry/');
+
+  return (
+    <>
+      <AmbientBackground />
+      <Sidebar />
+      <main style={{
+        paddingBottom: 80,
+        minHeight: '100vh',
+        position: 'relative',
+        zIndex: 1,
+      }}
+        className="md:ml-[240px]"
+      >
+        <div style={{
+          maxWidth: 900,
+          margin: '0 auto',
+          padding: '24px 20px',
+        }}>
+          {children}
+        </div>
+      </main>
+      {showFab && <QuickCapture />}
+    </>
+  );
 }
