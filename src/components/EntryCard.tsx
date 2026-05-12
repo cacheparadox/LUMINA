@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { MOOD_CONFIG } from '@/lib/utils';
 import { formatRelativeDate, truncateText } from '@/lib/utils';
 import type { JournalEntry } from '@/lib/db';
-import { Clock, MapPin, Tag, Moon } from 'lucide-react';
+import { Clock, MapPin, Tag } from 'lucide-react';
 
 interface EntryCardProps {
   entry: JournalEntry;
@@ -51,9 +51,6 @@ export default function EntryCard({ entry, onClick, index = 0 }: EntryCardProps)
               lineHeight: 1.3,
             }}>
               {entry.title || 'Untitled Entry'}
-              {entry.isDreamSpace && (
-                <Moon size={12} style={{ marginLeft: 6, display: 'inline', color: 'var(--lavender-400)' }} />
-              )}
             </h3>
             <span style={{
               fontSize: 11,
