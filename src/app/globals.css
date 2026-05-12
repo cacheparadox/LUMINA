@@ -9,6 +9,7 @@
   --cream-100: #FFF3EB;
   --cream-200: #FFE8D6;
   --cream-300: #FFD9BD;
+  --bg-rgb: 255, 249, 245; /* Matches --cream-50 */
 
   /* Warm Pink */
   --pink-100: #FFE4EC;
@@ -83,6 +84,7 @@
   --cream-100: #141020;
   --cream-200: #1C1630;
   --cream-300: #241C40;
+  --bg-rgb: 13, 11, 20; /* Matches --cream-50 */
   --glass-bg: rgba(20, 16, 32, 0.85);
   --glass-border: rgba(100, 80, 150, 0.2);
   --glass-shadow: 0 8px 32px rgba(80, 40, 120, 0.25);

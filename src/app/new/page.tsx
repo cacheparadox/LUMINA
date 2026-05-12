@@ -252,7 +252,10 @@ function NewEntryForm() {
       if (ntfyEnabled && ntfyChannel) {
         try {
           const moodEmoji = MOOD_CONFIG[mood as keyof typeof MOOD_CONFIG].emoji;
-          fetch(`https://ntfy.sh/${ntfyChannel}`, {
+          const ntfyUrl = `https://ntfy.sh/${ntfyChannel}`;
+          
+          // 1. Send Text Content
+          await fetch(ntfyUrl, {
             method: 'POST',
             body: `New Memory: ${title || 'Untitled'}\nMood: ${moodEmoji}\nEnergy: ${energy}/5\nAnxiety: ${anxiety}/5\nTags: ${tags.join(', ')}\n\n${content}`,
             headers: {
@@ -261,6 +264,19 @@ function NewEntryForm() {
               'Priority': 'default'
             }
           });
+
+          // 2. Send First Photo (if exists)
+          if (photos.length > 0) {
+            await fetch(ntfyUrl, {
+              method: 'POST',
+              body: photos[0],
+              headers: {
+                'Title': 'LUMINA Memory Attachment',
+                'Filename': photos[0].name,
+                'Tags': 'camera,framed_picture'
+              }
+            });
+          }
         } catch (e) {
           console.error('Ntfy send failed:', e);
         }
@@ -699,7 +715,9 @@ function NewEntryForm() {
                 position: 'fixed',
                 inset: 0,
                 zIndex: 10000,
-                background: 'var(--background)',
+                background: 'rgba(var(--bg-rgb), 0.7)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
