@@ -121,49 +121,57 @@ export default function BreathePage() {
           </p>
 
           {/* Breathing Circle */}
-          <div style={{ position: 'relative', width: 220, height: 220, marginBottom: 32 }}>
+          <div style={{ 
+            position: 'relative', 
+            width: 240, 
+            height: 240, 
+            marginBottom: 40,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
             {/* Outer ring progress */}
-            <svg width={220} height={220} style={{ position: 'absolute', top: 0, left: 0 }}>
-              <circle cx={110} cy={110} r={100} fill="none" stroke="var(--neutral-100)" strokeWidth={4} />
+            <svg width={240} height={240} style={{ position: 'absolute', top: 0, left: 0 }}>
+              <circle cx={120} cy={120} r={110} fill="none" stroke="var(--neutral-100)" strokeWidth={6} />
               <motion.circle
-                cx={110} cy={110} r={100}
+                cx={120} cy={120} r={110}
                 fill="none"
                 stroke={step.color}
-                strokeWidth={4}
+                strokeWidth={6}
                 strokeLinecap="round"
-                strokeDasharray={628}
-                animate={{ strokeDashoffset: 628 * (1 - progress) }}
+                strokeDasharray={691}
+                animate={{ strokeDashoffset: 691 * (1 - progress) }}
                 transition={{ duration: 0.3 }}
                 style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}
               />
             </svg>
-            {/* Inner breathing orb */}
+            
+            {/* Inner breathing orb (Outer Glow) */}
             <motion.div
               animate={{ scale: step.scale }}
               transition={{ duration: step.duration, ease: 'easeInOut' }}
               style={{
                 position: 'absolute',
-                top: '50%', left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 100, height: 100,
+                width: 140, height: 140,
                 borderRadius: '50%',
                 background: `radial-gradient(circle, ${step.color}, transparent)`,
-                opacity: 0.6,
-                filter: 'blur(8px)',
+                opacity: 0.4,
+                filter: 'blur(20px)',
               }}
             />
+
+            {/* Inner breathing orb (Main) */}
             <motion.div
               animate={{ scale: step.scale }}
               transition={{ duration: step.duration, ease: 'easeInOut' }}
               style={{
-                position: 'absolute',
-                top: '50%', left: '50%',
-                transform: 'translate(-50%, -50%)',
-                width: 60, height: 60,
+                position: 'relative',
+                width: 100, height: 100,
                 borderRadius: '50%',
                 background: step.color,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: `0 0 40px ${step.color}`,
+                boxShadow: `0 0 60px ${step.color}`,
+                zIndex: 2
               }}
             />
           </div>
