@@ -376,7 +376,7 @@ export default function HabitsPage() {
             {/* Per-habit streak cards */}
             {habitList.map((habit, i) => {
               const Icon = ICON_MAP[habit.iconName] || ICON_MAP['Star'];
-              const streak = getStreakData(habit.type);
+              const streak = getStreakData(habit);
 
               return (
                 <motion.div
@@ -415,7 +415,8 @@ export default function HabitsPage() {
                         <p style={{ fontSize: 9, color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Best</p>
                       </div>
                     </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(15, 1fr)', gap: 3 }}>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(15, 1fr)', gap: 3 }}>
                     {streak.last30.map((day, idx) => (
                       <motion.div
                         key={idx}
