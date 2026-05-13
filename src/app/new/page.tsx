@@ -207,7 +207,7 @@ function NewEntryForm() {
         customEmotions: selectedStickers,
         tags,
         location: location || undefined,
-        isVoiceEntry,
+        isVoiceEntry: audioBlobs.length > 0,
         createdAt: new Date(),
         updatedAt: new Date(),
       });
@@ -418,7 +418,6 @@ function NewEntryForm() {
                 <VoiceRecorder
                   onRecordingComplete={(blob, duration) => {
                     setAudioBlobs(prev => [...prev, { blob, duration }]);
-                    setIsVoiceEntry(true);
                   }}
                   onTranscript={(text) => {
                     setContent(prev => prev ? prev + '\n\n' + text : text);
