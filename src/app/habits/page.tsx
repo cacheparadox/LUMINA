@@ -141,24 +141,43 @@ export default function HabitsPage() {
   // Streak calculations — only considers live habit types
   const liveTypes = new Set(habitList.map(h => h.type));
 
-  const getStreakData = (type: string) => {
-    if (!allHabits) return { current: 0, best: 0, last30: Array(30).fill(false) };
-    // Only entries matching this type
-    const typeHabits = allHabits.filter(h => h.type === type);
-    const last30: boolean[] = [];
+  const getStreakData = (habit: typeof DEFAULT_HABITS[0]) => {
+    if (!allHabits) return { current: 0, best: 0, last30: Array(30).fill({ tracked: false, progress: 0 }) };
+    
+    const typeHabits = allHabits.filter(h => h.type === habit.type);
+    const last30: { tracked: boolean; progress: number }[] = [];
+    
     for (let i = 29; i >= 0; i--) {
       const day = startOfDay(subDays(new Date(), i));
-      // Deduplicate: just check if ANY entry exists for this type on this day
-      last30.push(typeHabits.some(h => isSameDay(new Date(h.timestamp), day)));
+      const entry = typeHabits.find(h => isSameDay(new Date(h.timestamp), day));
+      
+      if (entry) {
+        last30.push({ 
+          tracked: true, 
+          progress: entry.value / habit.max 
+        });
+      } else {
+        last30.push({ tracked: false, progress: 0 });
+      }
     }
+
     let current = 0;
     for (let i = last30.length - 1; i >= 0; i--) {
-      if (last30[i]) current++; else break;
+      if (last30[i].tracked && last30[i].progress >= 1) current++; 
+      else if (i === last30.length - 1) continue; // Allow today to be incomplete without breaking streak?
+      else break;
     }
+
     let best = 0, run = 0;
-    for (const tracked of last30) {
-      if (tracked) { run++; best = Math.max(best, run); } else { run = 0; }
+    for (const day of last30) {
+      if (day.tracked && day.progress >= 1) { 
+        run++; 
+        best = Math.max(best, run); 
+      } else { 
+        run = 0; 
+      }
     }
+
     return { current, best, last30 };
   };
 
@@ -396,29 +415,26 @@ export default function HabitsPage() {
                         <p style={{ fontSize: 9, color: 'var(--neutral-400)', textTransform: 'uppercase', letterSpacing: 0.5 }}>Best</p>
                       </div>
                     </div>
-                  </div>
-
-                  {/* 30-day heatmap */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(15, 1fr)', gap: 3 }}>
-                    {streak.last30.map((tracked, idx) => (
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(15, 1fr)', gap: 3 }}>
+                    {streak.last30.map((day, idx) => (
                       <motion.div
                         key={idx}
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ delay: idx * 0.015 }}
-                        title={format(subDays(new Date(), 29 - idx), 'MMM d')}
+                        title={`${format(subDays(new Date(), 29 - idx), 'MMM d')}: ${Math.round(day.progress * 100)}%`}
                         style={{
                           aspectRatio: '1',
                           borderRadius: 4,
-                          background: tracked ? habit.color : 'var(--neutral-100)',
-                          opacity: tracked ? 1 : 0.4,
-                          transition: 'background 0.2s',
+                          background: day.tracked ? habit.color : 'var(--neutral-100)',
+                          opacity: day.tracked ? (day.progress >= 1 ? 1 : 0.6) : 0.2,
+                          transition: 'all 0.2s',
                         }}
                       />
                     ))}
                   </div>
                   <p style={{ fontSize: 10, color: 'var(--neutral-400)', marginTop: 6, textAlign: 'right' }}>
-                    {streak.last30.filter(Boolean).length}/30 days tracked
+                    {streak.last30.filter(d => d.tracked && d.progress >= 1).length}/30 days completed
                   </p>
                 </motion.div>
               );
