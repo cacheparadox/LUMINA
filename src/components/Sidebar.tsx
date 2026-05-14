@@ -7,7 +7,7 @@ import {
   BookOpen, BarChart3, Calendar,
   Heart, Sparkles, MessageCircle, Settings, Search,
   Menu, X, Feather, Image as ImageIcon, ListChecks,
-  Palette, Rewind, Wind
+  Palette, Rewind, Wind, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import NotificationBell from './NotificationBell';
 
