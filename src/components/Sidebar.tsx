@@ -183,7 +183,7 @@ export default function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; 
                   return (
                     <button
                       key={item.href}
-                      onClick={() => { router.push(item.href); setIsOpen(false); }}
+                      onClick={() => { router.push(item.href); setIsMoreOpen(false); }}
                       className={`sidebar-link ${isActive ? 'active' : ''}`}
                       style={{ border: 'none', background: isActive ? undefined : 'none', cursor: 'pointer' }}
                     >
