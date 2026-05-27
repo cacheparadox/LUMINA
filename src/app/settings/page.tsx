@@ -7,8 +7,20 @@ import { getAIConfig, saveAIConfig } from '@/lib/ai';
 import { requestNotificationPermission } from '@/lib/notifications';
 import AppShell from '@/components/AppShell';
 import PinLock from '@/components/PinLock';
-import { Settings as SettingsIcon, Key, Cpu, Download, Upload, Trash2, Shield, Lock, Palette, RefreshCw } from 'lucide-react';
+import { Settings as SettingsIcon, Key, Cpu, Download, Upload, Trash2, Shield, Lock, Palette, RefreshCw, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+
+// Helper to convert VAPID public key (base64url) to UInt8Array for push manager subscription
+function urlBase64ToUint8Array(base64String: string) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -23,6 +35,14 @@ export default function SettingsPage() {
   const [ntfyEnabled, setNtfyEnabled] = useState(false);
   const [ntfyChannel, setNtfyChannel] = useState('');
 
+  // ── PWA Push Notification States ──
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushFrequency, setPushFrequency] = useState('4');
+  const [pushStartTime, setPushStartTime] = useState('09:00');
+  const [pushEndTime, setPushEndTime] = useState('21:00');
+  const [pushTesting, setPushTesting] = useState(false);
+  const [pushSubscribing, setPushSubscribing] = useState(false);
+
   useEffect(() => {
     const config = getAIConfig();
     if (config) {
@@ -34,6 +54,10 @@ export default function SettingsPage() {
     getSetting('auto_backup').then(v => setAutoBackup(v === 'true'));
     getSetting('ntfy_enabled').then(v => setNtfyEnabled(v === 'true'));
     getSetting('ntfy_channel').then(v => setNtfyChannel(v || ''));
+    getSetting('push_notifications_enabled').then(v => setPushEnabled(v === 'true'));
+    getSetting('push_frequency').then(v => setPushFrequency(v || '4'));
+    getSetting('push_start_time').then(v => setPushStartTime(v || '09:00'));
+    getSetting('push_end_time').then(v => setPushEndTime(v || '21:00'));
     setNotifEnabled(typeof window !== 'undefined' && Notification.permission === 'granted');
   }, []);
 
@@ -86,6 +110,105 @@ export default function SettingsPage() {
   const handleToggleNotif = async () => {
     const granted = await requestNotificationPermission();
     setNotifEnabled(granted);
+  };
+
+  const handleTogglePush = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) {
+      alert('Service workers are not supported in this browser environment.');
+      return;
+    }
+
+    setPushSubscribing(true);
+    try {
+      if (pushEnabled) {
+        // Disable Push
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+        if (subscription) {
+          await fetch('/api/push/unsubscribe', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ endpoint: subscription.endpoint })
+          });
+          await subscription.unsubscribe();
+        }
+        await setSetting('push_notifications_enabled', 'false');
+        setPushEnabled(false);
+      } else {
+        // Enable Push
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          alert('Notification permission was denied. Please allow notifications in your browser first.');
+          setPushSubscribing(false);
+          return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+        
+        // Fetch VAPID public key
+        const response = await fetch('/api/push/subscribe');
+        if (!response.ok) throw new Error('Failed to retrieve push settings from server');
+        const { publicKey } = await response.json();
+        
+        // Subscribe to Push
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey)
+        });
+
+        // Register subscription on backend
+        const regRes = await fetch('/api/push/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(subscription)
+        });
+        if (!regRes.ok) throw new Error('Failed to register device subscription on server');
+
+        await setSetting('push_notifications_enabled', 'true');
+        setPushEnabled(true);
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert('Failed to configure PWA Push Notifications: ' + e.message);
+    } finally {
+      setPushSubscribing(false);
+    }
+  };
+
+  const handleSavePushParams = async () => {
+    await setSetting('push_frequency', pushFrequency);
+    await setSetting('push_start_time', pushStartTime);
+    await setSetting('push_end_time', pushEndTime);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleSendTestNotification = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    setPushTesting(true);
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        alert('Please enable PWA Push Notifications first to register this device.');
+        setPushTesting(false);
+        return;
+      }
+
+      const response = await fetch('/api/push/tickle', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription })
+      });
+      if (!response.ok) {
+        throw new Error('Server returned an error trying to push test reminder');
+      }
+    } catch (e: any) {
+      console.error(e);
+      alert('Failed to trigger test notification: ' + e.message);
+    } finally {
+      setPushTesting(false);
+    }
   };
 
   const handleExport = async () => {
@@ -239,6 +362,107 @@ export default function SettingsPage() {
               }} />
             </button>
           </div>
+        </motion.div>
+
+        {/* PWA Push Reminders */}
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card-static" style={{ padding: 24, marginBottom: 20 }}>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--neutral-700)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Bell size={18} style={{ color: 'var(--pink-400)' }} /> Reminders & PWA Push
+          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>PWA Push Notifications</p>
+              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Receive personalized reminder pushes on your Android phone</p>
+            </div>
+            <button onClick={handleTogglePush} disabled={pushSubscribing} style={{
+              width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
+              background: pushEnabled ? 'linear-gradient(135deg, var(--pink-300), var(--lavender-400))' : 'var(--neutral-200)',
+              position: 'relative', transition: 'all 0.3s', opacity: pushSubscribing ? 0.6 : 1,
+            }}>
+              <div style={{
+                width: 20, height: 20, borderRadius: '50%', background: 'white',
+                position: 'absolute', top: 3,
+                left: pushEnabled ? 25 : 3,
+                transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+              }} />
+            </button>
+          </div>
+
+          {pushEnabled && (
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ display: 'flex', flexDirection: 'column', gap: 16, borderTop: '1px solid var(--neutral-100)', paddingTop: 16, marginTop: 16 }}>
+              {/* Frequency */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--neutral-500)', display: 'block', marginBottom: 6 }}>
+                  Reminder Frequency
+                </label>
+                <select 
+                  value={pushFrequency} 
+                  onChange={e => setPushFrequency(e.target.value)} 
+                  className="input" 
+                  style={{ width: '100%', background: 'white' }}
+                >
+                  <option value="1">Every hour</option>
+                  <option value="2">Every 2 hours</option>
+                  <option value="4">Every 4 hours</option>
+                  <option value="6">Every 6 hours</option>
+                  <option value="8">Every 8 hours</option>
+                  <option value="12">Every 12 hours</option>
+                  <option value="24">Once a day (Every 24 hours)</option>
+                </select>
+                <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 4 }}>
+                  How often Lumina should check if you need a reminder nudge.
+                </p>
+              </div>
+
+              {/* Active Hours / DND */}
+              <div>
+                <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--neutral-500)', display: 'block', marginBottom: 6 }}>
+                  Quiet Hours (DND Filter)
+                </label>
+                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 11, color: 'var(--neutral-400)', display: 'block', marginBottom: 2 }}>Reminders Start</span>
+                    <input 
+                      type="time" 
+                      value={pushStartTime} 
+                      onChange={e => setPushStartTime(e.target.value)} 
+                      className="input" 
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                  <div style={{ color: 'var(--neutral-400)', fontSize: 12, marginTop: 14 }}>to</div>
+                  <div style={{ flex: 1 }}>
+                    <span style={{ fontSize: 11, color: 'var(--neutral-400)', display: 'block', marginBottom: 2 }}>Reminders End</span>
+                    <input 
+                      type="time" 
+                      value={pushEndTime} 
+                      onChange={e => setPushEndTime(e.target.value)} 
+                      className="input" 
+                      style={{ width: '100%' }}
+                    />
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 4 }}>
+                  Reminders will only ring during this window (e.g. 09:00 to 21:00) so you are not disturbed at night.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button className="btn-primary" onClick={handleSavePushParams} style={{ fontSize: 13, flex: 1 }}>
+                  {saved ? 'Saved ✓' : 'Save Reminder Settings'}
+                </button>
+                <button 
+                  className="btn-secondary" 
+                  onClick={handleSendTestNotification} 
+                  disabled={pushTesting}
+                  style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}
+                >
+                  {pushTesting ? 'Sending...' : 'Send Test Notification'}
+                </button>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
 
         {/* Ntfy Integration */}
