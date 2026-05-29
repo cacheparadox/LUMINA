@@ -227,6 +227,13 @@ export function isHighIntensityEntry(intensity: number): boolean {
 // ── Seed Data ──────────────────────────────────────────────────
 
 export async function seedPrompts() {
+  try {
+    const count = await db.prompts.count();
+    if (count > 0) return; // Already seeded
+  } catch (e) {
+    console.error('Failed to check prompt seed count:', e);
+  }
+
   await db.prompts.clear();
 
   const prompts: Omit<Prompt, 'id'>[] = [

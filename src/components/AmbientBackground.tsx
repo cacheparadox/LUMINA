@@ -116,7 +116,8 @@ export default function AmbientBackground() {
     <div 
       className="ambient-bg" 
       style={{ 
-        background: `radial-gradient(circle at 50% 0%, ${MOOD_CONFIG[latestMood as keyof typeof MOOD_CONFIG]?.color}22 0%, transparent 70%)` 
+        background: `radial-gradient(circle at 50% 0%, ${MOOD_CONFIG[latestMood as keyof typeof MOOD_CONFIG]?.color}22 0%, transparent 70%)`,
+        pointerEvents: 'none'
       }}
     >
       <canvas
