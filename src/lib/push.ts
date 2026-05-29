@@ -1,15 +1,24 @@
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import webpush from 'web-push';
 
-const DATA_DIR = path.join(process.cwd(), 'data');
+// Use tmpdir in Vercel to prevent EROFS (Read-only file system)
+const DATA_DIR = process.env.VERCEL 
+  ? path.join(os.tmpdir(), 'lumina-data')
+  : path.join(process.cwd(), 'data');
+
 const VAPID_FILE = path.join(DATA_DIR, 'vapid.json');
 const SUBS_FILE = path.join(DATA_DIR, 'push_subscriptions.json');
 
 // Ensure data directory exists
 function ensureDataDir() {
-  if (!fs.existsSync(DATA_DIR)) {
-    fs.mkdirSync(DATA_DIR, { recursive: true });
+  try {
+    if (!fs.existsSync(DATA_DIR)) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+    }
+  } catch (e) {
+    console.error('Error creating data directory:', e);
   }
 }
 
@@ -19,53 +28,77 @@ export interface VapidKeys {
 }
 
 export function getVapidKeys(): VapidKeys {
-  ensureDataDir();
-  if (fs.existsSync(VAPID_FILE)) {
-    try {
+  // 1. Check environment variables (recommended for production/Vercel)
+  const envPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || process.env.VAPID_PUBLIC_KEY;
+  const envPrivateKey = process.env.VAPID_PRIVATE_KEY;
+  if (envPublicKey && envPrivateKey) {
+    return {
+      publicKey: envPublicKey,
+      privateKey: envPrivateKey
+    };
+  }
+
+  // 2. Fall back to local file storage
+  try {
+    ensureDataDir();
+    if (fs.existsSync(VAPID_FILE)) {
       const data = JSON.parse(fs.readFileSync(VAPID_FILE, 'utf-8'));
       if (data.publicKey && data.privateKey) {
         return data;
       }
-    } catch (e) {
-      console.error('Error reading VAPID file, regenerating keys...', e);
     }
+  } catch (e) {
+    console.error('Error reading VAPID file, regenerating keys...', e);
   }
 
-  // Generate new keys
+  // 3. Generate new keys (fallback for local development only)
   const keys = webpush.generateVAPIDKeys();
-  fs.writeFileSync(VAPID_FILE, JSON.stringify(keys, null, 2), 'utf-8');
-  console.log('Generated new VAPID keys in data/vapid.json');
+  try {
+    ensureDataDir();
+    fs.writeFileSync(VAPID_FILE, JSON.stringify(keys, null, 2), 'utf-8');
+    console.log('Generated new VAPID keys in:', VAPID_FILE);
+  } catch (e) {
+    console.error('Could not write VAPID keys to file (expected in read-only environments):', e);
+  }
   return keys;
 }
 
 export function getSubscriptions(): any[] {
-  ensureDataDir();
-  if (fs.existsSync(SUBS_FILE)) {
-    try {
+  try {
+    ensureDataDir();
+    if (fs.existsSync(SUBS_FILE)) {
       return JSON.parse(fs.readFileSync(SUBS_FILE, 'utf-8'));
-    } catch (e) {
-      console.error('Error reading subscriptions file, resetting...', e);
     }
+  } catch (e) {
+    console.error('Error reading subscriptions file, resetting...', e);
   }
   return [];
 }
 
 export function saveSubscription(subscription: any) {
-  ensureDataDir();
-  const subs = getSubscriptions();
-  // Avoid duplicate subscriptions by comparing endpoints
-  const exists = subs.some((s) => s.endpoint === subscription.endpoint);
-  if (!exists) {
-    subs.push(subscription);
-    fs.writeFileSync(SUBS_FILE, JSON.stringify(subs, null, 2), 'utf-8');
+  try {
+    ensureDataDir();
+    const subs = getSubscriptions();
+    // Avoid duplicate subscriptions by comparing endpoints
+    const exists = subs.some((s) => s.endpoint === subscription.endpoint);
+    if (!exists) {
+      subs.push(subscription);
+      fs.writeFileSync(SUBS_FILE, JSON.stringify(subs, null, 2), 'utf-8');
+    }
+  } catch (e) {
+    console.error('Failed to save subscription:', e);
   }
 }
 
 export function removeSubscription(endpoint: string) {
-  ensureDataDir();
-  const subs = getSubscriptions();
-  const filtered = subs.filter((s) => s.endpoint !== endpoint);
-  fs.writeFileSync(SUBS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+  try {
+    ensureDataDir();
+    const subs = getSubscriptions();
+    const filtered = subs.filter((s) => s.endpoint !== endpoint);
+    fs.writeFileSync(SUBS_FILE, JSON.stringify(filtered, null, 2), 'utf-8');
+  } catch (e) {
+    console.error('Failed to remove subscription:', e);
+  }
 }
 
 export async function sendTickle(subscription: any, isTest: boolean = false) {
