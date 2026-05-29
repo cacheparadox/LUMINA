@@ -6,7 +6,6 @@ import { db, getSetting, setSetting } from '@/lib/db';
 import { getAIConfig, saveAIConfig } from '@/lib/ai';
 import { requestNotificationPermission } from '@/lib/notifications';
 import AppShell from '@/components/AppShell';
-import PinLock from '@/components/PinLock';
 import { Settings as SettingsIcon, Key, Cpu, Download, Upload, Trash2, Shield, Lock, Palette, RefreshCw, Bell } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -28,8 +27,6 @@ export default function SettingsPage() {
   const [models, setModels] = useState('');
   const [saved, setSaved] = useState(false);
   const [entryCount, setEntryCount] = useState(0);
-  const [pinEnabled, setPinEnabled] = useState(false);
-  const [showPinSetup, setShowPinSetup] = useState(false);
   const [notifEnabled, setNotifEnabled] = useState(false);
   const [autoBackup, setAutoBackup] = useState(false);
   const [ntfyEnabled, setNtfyEnabled] = useState(false);
@@ -50,7 +47,6 @@ export default function SettingsPage() {
       setModels(config.models.join(', '));
     }
     db.entries.count().then(setEntryCount);
-    getSetting('pin_enabled').then(v => setPinEnabled(v === 'true'));
     getSetting('auto_backup').then(v => setAutoBackup(v === 'true'));
     getSetting('ntfy_enabled').then(v => setNtfyEnabled(v === 'true'));
     getSetting('ntfy_channel').then(v => setNtfyChannel(v || ''));
@@ -70,20 +66,6 @@ export default function SettingsPage() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleTogglePin = async () => {
-    if (pinEnabled) {
-      await setSetting('pin_enabled', 'false');
-      setPinEnabled(false);
-    } else {
-      const existingPin = await getSetting('pin_lock');
-      if (!existingPin) {
-        setShowPinSetup(true);
-      } else {
-        await setSetting('pin_enabled', 'true');
-        setPinEnabled(true);
-      }
-    }
-  };
 
   const handleToggleAutoBackup = async () => {
     if (autoBackup) {
@@ -282,13 +264,6 @@ export default function SettingsPage() {
     setEntryCount(0);
   };
 
-  if (showPinSetup) {
-    return <PinLock onUnlock={async () => {
-      await setSetting('pin_enabled', 'true');
-      setPinEnabled(true);
-      setShowPinSetup(false);
-    }} />;
-  }
 
   return (
     <AppShell>
@@ -310,24 +285,6 @@ export default function SettingsPage() {
           </h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>PIN Lock</p>
-              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Require a 4-digit PIN to open LUMINA</p>
-            </div>
-            <button onClick={handleTogglePin} style={{
-              width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
-              background: pinEnabled ? 'linear-gradient(135deg, var(--pink-300), var(--lavender-400))' : 'var(--neutral-200)',
-              position: 'relative', transition: 'all 0.3s',
-            }}>
-              <div style={{
-                width: 20, height: 20, borderRadius: '50%', background: 'white',
-                position: 'absolute', top: 3,
-                left: pinEnabled ? 25 : 3,
-                transition: 'left 0.3s', boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-              }} />
-            </button>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
               <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>Notifications</p>
               <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Gentle check-in reminders & anniversaries</p>
             </div>
@@ -344,7 +301,7 @@ export default function SettingsPage() {
               }} />
             </button>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>Daily Auto Backup</p>
               <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Automatically download backup JSON daily</p>

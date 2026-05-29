@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import SplashScreen from '@/components/SplashScreen';
-import PinLock from '@/components/PinLock';
 import Sidebar from '@/components/Sidebar';
 import AmbientBackground from '@/components/AmbientBackground';
 import QuickCapture from '@/components/QuickCapture';
@@ -26,7 +25,6 @@ export default function AppGuard({ children }: { children: React.ReactNode }) {
     }
     return true;
   });
-  const [showPinLock, setShowPinLock] = useState(false);
   const [ready, setReady] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
@@ -44,7 +42,6 @@ export default function AppGuard({ children }: { children: React.ReactNode }) {
       }
     })();
 
-    // Check PIN even if splash is skipped
     if (!showSplash) {
       (async () => {
         // Data Migration: Ensure all createdAt are Date objects (fixes mixed-type index lag)
@@ -60,12 +57,7 @@ export default function AppGuard({ children }: { children: React.ReactNode }) {
           }
         }
 
-        const pinEnabled = await getSetting('pin_enabled');
-        if (pinEnabled === 'true') {
-          setShowPinLock(true);
-        } else {
-          setReady(true);
-        }
+        setReady(true);
       })();
     }
   }, [showSplash]);
@@ -100,27 +92,11 @@ export default function AppGuard({ children }: { children: React.ReactNode }) {
       sessionStorage.setItem('lumina_splash_shown', 'true');
     }
     triggerAutoBackup();
-    
-    // Check if PIN is enabled
-    const pinEnabled = await getSetting('pin_enabled');
-    if (pinEnabled === 'true') {
-      setShowPinLock(true);
-    } else {
-      setReady(true);
-    }
-  };
-
-  const handleUnlock = () => {
-    setShowPinLock(false);
     setReady(true);
   };
 
   if (showSplash) {
     return <SplashScreen onFinish={handleSplashDone} />;
-  }
-
-  if (showPinLock) {
-    return <PinLock onUnlock={handleUnlock} />;
   }
 
   if (!ready) return null;
