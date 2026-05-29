@@ -38,7 +38,15 @@ export function getVapidKeys(): VapidKeys {
     };
   }
 
-  // 2. Fall back to local file storage
+  // 2. Fall back to hardcoded default keys for zero-config Vercel/production deployment
+  if (process.env.VERCEL || process.env.NODE_ENV === 'production') {
+    return {
+      publicKey: 'BKM3N-fmWR_prfGo2NNpTZU7wZtwxP8imTOonud3OyLVuuW_f1aHoSWtfoo-nMLO2o6jjK3QTQBxURIhvd9D4mw',
+      privateKey: 'oHH-axwenPY8IN5ll1hI42tCCEDQzN51eN6Le6glXH4'
+    };
+  }
+
+  // 3. Fall back to local file storage
   try {
     ensureDataDir();
     if (fs.existsSync(VAPID_FILE)) {
@@ -51,7 +59,7 @@ export function getVapidKeys(): VapidKeys {
     console.error('Error reading VAPID file, regenerating keys...', e);
   }
 
-  // 3. Generate new keys (fallback for local development only)
+  // 4. Generate new keys (fallback for local development only)
   const keys = webpush.generateVAPIDKeys();
   try {
     ensureDataDir();
