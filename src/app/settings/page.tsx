@@ -344,15 +344,16 @@ export default function SettingsPage() {
           </div>
         </motion.div>
 
-        {/* PWA Push Reminders */}
+        {/* Reminders & Notifications */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card-static" style={{ padding: 24, marginBottom: 20 }}>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--neutral-700)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <Bell size={18} style={{ color: 'var(--pink-400)' }} /> Reminders & PWA Push
+            <Bell size={18} style={{ color: 'var(--pink-400)' }} /> Reminders & Notifications
           </h3>
+          
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>PWA Push Notifications</p>
-              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Receive personalized reminder pushes on your Android phone</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>PWA Push Notifications (Android/Desktop)</p>
+              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Receive personalized reminder pushes</p>
             </div>
             <button onClick={handleTogglePush} disabled={pushSubscribing} style={{
               width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
@@ -368,92 +369,10 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          {pushEnabled && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ display: 'flex', flexDirection: 'column', gap: 16, borderTop: '1px solid var(--neutral-100)', paddingTop: 16, marginTop: 16 }}>
-              {/* Frequency */}
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--neutral-500)', display: 'block', marginBottom: 6 }}>
-                  Reminder Frequency
-                </label>
-                <select 
-                  value={pushFrequency} 
-                  onChange={e => setPushFrequency(e.target.value)} 
-                  className="input" 
-                  style={{ width: '100%', background: 'white' }}
-                >
-                  <option value="1">Every hour</option>
-                  <option value="2">Every 2 hours</option>
-                  <option value="4">Every 4 hours</option>
-                  <option value="6">Every 6 hours</option>
-                  <option value="8">Every 8 hours</option>
-                  <option value="12">Every 12 hours</option>
-                  <option value="24">Once a day (Every 24 hours)</option>
-                </select>
-                <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 4 }}>
-                  How often Lumina should check if you need a reminder nudge.
-                </p>
-              </div>
-
-              {/* Active Hours / DND */}
-              <div>
-                <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--neutral-500)', display: 'block', marginBottom: 6 }}>
-                  Quiet Hours (DND Filter)
-                </label>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 11, color: 'var(--neutral-400)', display: 'block', marginBottom: 2 }}>Reminders Start</span>
-                    <input 
-                      type="time" 
-                      value={pushStartTime} 
-                      onChange={e => setPushStartTime(e.target.value)} 
-                      className="input" 
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                  <div style={{ color: 'var(--neutral-400)', fontSize: 12, marginTop: 14 }}>to</div>
-                  <div style={{ flex: 1 }}>
-                    <span style={{ fontSize: 11, color: 'var(--neutral-400)', display: 'block', marginBottom: 2 }}>Reminders End</span>
-                    <input 
-                      type="time" 
-                      value={pushEndTime} 
-                      onChange={e => setPushEndTime(e.target.value)} 
-                      className="input" 
-                      style={{ width: '100%' }}
-                    />
-                  </div>
-                </div>
-                <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 4 }}>
-                  Reminders will only ring during this window (e.g. 09:00 to 21:00) so you are not disturbed at night.
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <button className="btn-primary" onClick={handleSavePushParams} style={{ fontSize: 13, flex: 1 }}>
-                  {saved ? 'Saved ✓' : 'Save Reminder Settings'}
-                </button>
-                <button 
-                  className="btn-secondary" 
-                  onClick={handleSendTestNotification} 
-                  disabled={pushTesting}
-                  style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}
-                >
-                  {pushTesting ? 'Sending...' : 'Send Test Notification'}
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* Ntfy Integration */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass-card-static" style={{ padding: 24, marginBottom: 20 }}>
-          <h3 style={{ fontSize: 16, fontWeight: 600, color: 'var(--neutral-700)', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <RefreshCw size={18} style={{ color: 'var(--pink-400)' }} /> Ntfy Integration
-          </h3>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <div>
-              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>Enable Ntfy Alerts</p>
-              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Send entries to a custom Ntfy channel</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--neutral-700)' }}>Ntfy Daily Reminders (iOS/Web)</p>
+              <p style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Reliable push notifications via Ntfy app</p>
             </div>
             <button onClick={handleToggleNtfy} style={{
               width: 48, height: 26, borderRadius: 13, border: 'none', cursor: 'pointer',
@@ -468,8 +387,9 @@ export default function SettingsPage() {
               }} />
             </button>
           </div>
+
           {ntfyEnabled && (
-            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+            <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginBottom: 20 }}>
               <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Your Personal Reminder Link</label>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--neutral-100)', borderRadius: 'var(--radius-md)' }}>
                 <code style={{ fontSize: 13, color: 'var(--neutral-700)' }}>{ntfyChannel}</code>
@@ -484,10 +404,86 @@ export default function SettingsPage() {
                 </a>
               </div>
               <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 8 }}>
-                Entries will be sent to <code>https://ntfy.sh/&#123;channel&#125;</code>
+                Download the Ntfy app and subscribe to this topic.
               </p>
             </motion.div>
           )}
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderTop: '1px solid var(--neutral-100)', paddingTop: 16 }}>
+            {/* Frequency */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--neutral-500)', display: 'block', marginBottom: 6 }}>
+                Reminder Frequency
+              </label>
+              <select 
+                value={pushFrequency} 
+                onChange={e => setPushFrequency(e.target.value)} 
+                className="input" 
+                style={{ width: '100%', background: 'white' }}
+              >
+                <option value="1">Every hour</option>
+                <option value="2">Every 2 hours</option>
+                <option value="4">Every 4 hours</option>
+                <option value="6">Every 6 hours</option>
+                <option value="8">Every 8 hours</option>
+                <option value="12">Every 12 hours</option>
+                <option value="24">Once a day (Every 24 hours)</option>
+              </select>
+              <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 4 }}>
+                How often Lumina should check if you need a reminder nudge.
+              </p>
+            </div>
+
+            {/* Active Hours / DND */}
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--neutral-500)', display: 'block', marginBottom: 6 }}>
+                Quiet Hours (DND Filter)
+              </label>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 11, color: 'var(--neutral-400)', display: 'block', marginBottom: 2 }}>Reminders Start</span>
+                  <input 
+                    type="time" 
+                    value={pushStartTime} 
+                    onChange={e => setPushStartTime(e.target.value)} 
+                    className="input" 
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div style={{ color: 'var(--neutral-400)', fontSize: 12, marginTop: 14 }}>to</div>
+                <div style={{ flex: 1 }}>
+                  <span style={{ fontSize: 11, color: 'var(--neutral-400)', display: 'block', marginBottom: 2 }}>Reminders End</span>
+                  <input 
+                    type="time" 
+                    value={pushEndTime} 
+                    onChange={e => setPushEndTime(e.target.value)} 
+                    className="input" 
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+              <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 4 }}>
+                Reminders will only ring during this window (e.g. 09:00 to 21:00) so you are not disturbed at night. Applies to both PWA and Ntfy.
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+              <button className="btn-primary" onClick={handleSavePushParams} style={{ fontSize: 13, flex: 1 }}>
+                {saved ? 'Saved ✓' : 'Save Reminder Settings'}
+              </button>
+              {pushEnabled && (
+                <button 
+                  className="btn-secondary" 
+                  onClick={handleSendTestNotification} 
+                  disabled={pushTesting}
+                  style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, cursor: 'pointer' }}
+                >
+                  {pushTesting ? 'Sending...' : 'Test PWA Push'}
+                </button>
+              )}
+            </div>
+          </div>
         </motion.div>
 
         {/* AI Configuration */}
