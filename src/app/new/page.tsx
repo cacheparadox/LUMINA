@@ -270,8 +270,8 @@ function NewEntryForm() {
       }
 
       // Asynchronously update Supabase for daily reminder cron job (Zero UI lag)
-      getSetting('ntfy_channel').then(async (channel) => {
-        if (channel) {
+      getSetting('ntfy_reminder_topic').then(async (topic) => {
+        if (topic) {
           try {
             const { supabase } = await import('@/lib/supabase');
             // We use the browser's local date format yyyy-mm-dd
@@ -279,7 +279,7 @@ function NewEntryForm() {
             const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
             
             await supabase.from('lumina_devices').upsert(
-              { ntfy_topic: channel, last_entry_date: localDateStr, timezone: tz },
+              { ntfy_topic: topic, last_entry_date: localDateStr, timezone: tz },
               { onConflict: 'ntfy_topic' }
             );
           } catch (e) {

@@ -27,12 +27,12 @@ export default function JournalPage() {
 
   useEffect(() => {
     seedPrompts().then(async () => {
-      // Ensure a secure random ntfy topic is generated for the user
+      // Ensure a secure random ntfy topic is generated for daily reminders
       const { getSetting, setSetting } = await import('@/lib/db');
-      let channel = await getSetting('ntfy_channel');
-      if (!channel) {
-        channel = "lumina_" + crypto.randomUUID().replace(/-/g, "");
-        await setSetting('ntfy_channel', channel);
+      let topic = await getSetting('ntfy_reminder_topic');
+      if (!topic) {
+        topic = "lumina_reminder_" + crypto.randomUUID().replace(/-/g, "");
+        await setSetting('ntfy_reminder_topic', topic);
       }
       setInitialized(true);
     });
