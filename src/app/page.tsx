@@ -26,7 +26,16 @@ export default function JournalPage() {
   const greeting = getGreeting();
 
   useEffect(() => {
-    seedPrompts().then(() => setInitialized(true));
+    seedPrompts().then(async () => {
+      // Ensure a secure random ntfy topic is generated for the user
+      const { getSetting, setSetting } = await import('@/lib/db');
+      let channel = await getSetting('ntfy_channel');
+      if (!channel) {
+        channel = "lumina_" + crypto.randomUUID().replace(/-/g, "");
+        await setSetting('ntfy_channel', channel);
+      }
+      setInitialized(true);
+    });
   }, []);
 
   const entries = useLiveQuery(

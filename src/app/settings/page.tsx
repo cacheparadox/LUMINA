@@ -447,17 +447,18 @@ export default function SettingsPage() {
           </div>
           {ntfyEnabled && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-              <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Ntfy Channel Name</label>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <input
-                  type="text"
-                  className="input"
-                  placeholder="e.g. my_journal_channel"
-                  value={ntfyChannel}
-                  onChange={e => setNtfyChannel(e.target.value)}
-                  style={{ flex: 1 }}
-                />
-                <button className="btn-primary" onClick={handleSaveNtfyChannel} style={{ padding: '0 16px' }}>Save</button>
+              <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Your Personal Reminder Link</label>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--neutral-100)', borderRadius: 'var(--radius-md)' }}>
+                <code style={{ fontSize: 13, color: 'var(--neutral-700)' }}>{ntfyChannel}</code>
+                <a 
+                  href={`https://ntfy.sh/${ntfyChannel}`} 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="btn-primary" 
+                  style={{ textDecoration: 'none', padding: '6px 12px', fontSize: 12 }}
+                >
+                  Subscribe
+                </a>
               </div>
               <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 8 }}>
                 Entries will be sent to <code>https://ntfy.sh/&#123;channel&#125;</code>

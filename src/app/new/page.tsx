@@ -269,6 +269,22 @@ function NewEntryForm() {
         }
       }
 
+      // Asynchronously update Supabase for daily reminder cron job (Zero UI lag)
+      getSetting('ntfy_channel').then(async (channel) => {
+        if (channel) {
+          try {
+            const { supabase } = await import('@/lib/supabase');
+            const todayStr = new Date().toISOString().split('T')[0];
+            await supabase.from('lumina_devices').upsert(
+              { ntfy_topic: channel, last_entry_date: todayStr },
+              { onConflict: 'ntfy_topic' }
+            );
+          } catch (e) {
+            console.error('Failed to update push reminder date in Supabase:', e);
+          }
+        }
+      });
+
       // Show mood quote instead of navigating immediately
       const quotes = MOOD_QUOTES[mood as keyof typeof MOOD_QUOTES] || MOOD_QUOTES[3];
       const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
