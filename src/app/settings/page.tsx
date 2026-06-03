@@ -392,21 +392,19 @@ export default function SettingsPage() {
 
           {ntfyEnabled && (
             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Your Personal Reminder Link</label>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--neutral-100)', borderRadius: 'var(--radius-md)' }}>
-                <code style={{ fontSize: 13, color: 'var(--neutral-700)' }}>{ntfyReminderTopic}</code>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', background: 'var(--neutral-100)', borderRadius: 'var(--radius-md)' }}>
                 <a 
                   href={`ntfy://ntfy.sh/${ntfyReminderTopic}`} 
                   target="_blank" 
                   rel="noreferrer" 
                   className="btn-primary" 
-                  style={{ textDecoration: 'none', padding: '6px 12px', fontSize: 12 }}
+                  style={{ textDecoration: 'none', padding: '10px 20px', fontSize: 14, width: '100%', textAlign: 'center' }}
                 >
-                  Subscribe in App
+                  Subscribe to your custom reminder
                 </a>
               </div>
-              <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 8 }}>
-                Download the Ntfy app and subscribe to this topic.
+              <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 8, textAlign: 'center' }}>
+                Requires the Ntfy app installed on your device.
               </p>
             </motion.div>
           )}
