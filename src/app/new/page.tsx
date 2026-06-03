@@ -274,9 +274,12 @@ function NewEntryForm() {
         if (channel) {
           try {
             const { supabase } = await import('@/lib/supabase');
-            const todayStr = new Date().toISOString().split('T')[0];
+            // We use the browser's local date format yyyy-mm-dd
+            const localDateStr = new Date().toLocaleDateString('en-CA'); 
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            
             await supabase.from('lumina_devices').upsert(
-              { ntfy_topic: channel, last_entry_date: todayStr },
+              { ntfy_topic: channel, last_entry_date: localDateStr, timezone: tz },
               { onConflict: 'ntfy_topic' }
             );
           } catch (e) {

@@ -161,6 +161,29 @@ export default function SettingsPage() {
     await setSetting('push_frequency', pushFrequency);
     await setSetting('push_start_time', pushStartTime);
     await setSetting('push_end_time', pushEndTime);
+
+    // Sync to Supabase for Ntfy hourly reminders
+    getSetting('ntfy_channel').then(async (channel) => {
+      if (channel) {
+        try {
+          const { supabase } = await import('@/lib/supabase');
+          const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+          await supabase.from('lumina_devices').upsert(
+            { 
+              ntfy_topic: channel, 
+              push_frequency: parseInt(pushFrequency, 10),
+              push_start_time: pushStartTime + ':00', // Ensure HH:MM:SS format
+              push_end_time: pushEndTime + ':00',
+              timezone: tz
+            },
+            { onConflict: 'ntfy_topic' }
+          );
+        } catch (e) {
+          console.error('Failed to sync reminder settings to Supabase:', e);
+        }
+      }
+    });
+
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
