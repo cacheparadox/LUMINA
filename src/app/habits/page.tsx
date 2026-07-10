@@ -11,11 +11,11 @@ import { format, isToday, subDays, startOfDay, isSameDay } from 'date-fns';
 import { vibrate } from '@/lib/utils';
 
 const DEFAULT_HABITS = [
-  { id: 'sleep', type: 'sleep', label: 'Sleep', iconName: 'Moon', unit: 'hrs', max: 12, color: 'var(--lavender-300)' },
-  { id: 'water', type: 'water', label: 'Water', iconName: 'Droplets', unit: 'glasses', max: 12, color: 'var(--sage-300)' },
-  { id: 'workout', type: 'workout', label: 'Workout', iconName: 'Dumbbell', unit: 'min', max: 120, color: 'var(--pink-300)' },
-  { id: 'reading', type: 'reading', label: 'Reading', iconName: 'BookOpen', unit: 'min', max: 120, color: 'var(--gold-300)' },
-  { id: 'meditation', type: 'meditation', label: 'Meditation', iconName: 'Brain', unit: 'min', max: 60, color: 'var(--lavender-400)' },
+  { id: 'sleep', type: 'sleep', label: 'Sleep', iconName: 'Moon', unit: 'hrs', max: 12, color: 'var(--lavender-300)', habitType: 'unit' as 'unit' | 'binary' },
+  { id: 'water', type: 'water', label: 'Water', iconName: 'Droplets', unit: 'glasses', max: 12, color: 'var(--sage-300)', habitType: 'unit' as 'unit' | 'binary' },
+  { id: 'workout', type: 'workout', label: 'Workout', iconName: 'Dumbbell', unit: 'min', max: 120, color: 'var(--pink-300)', habitType: 'unit' as 'unit' | 'binary' },
+  { id: 'reading', type: 'reading', label: 'Reading', iconName: 'BookOpen', unit: 'min', max: 120, color: 'var(--gold-300)', habitType: 'unit' as 'unit' | 'binary' },
+  { id: 'meditation', type: 'meditation', label: 'Meditation', iconName: 'Brain', unit: 'min', max: 60, color: 'var(--lavender-400)', habitType: 'unit' as 'unit' | 'binary' },
 ];
 
 const HABIT_COLORS = [
@@ -39,6 +39,7 @@ export default function HabitsPage() {
   const [newMax, setNewMax] = useState(10);
   const [newIconName, setNewIconName] = useState('Star');
   const [newColor, setNewColor] = useState('var(--pink-400)');
+  const [newHabitType, setNewHabitType] = useState<'unit' | 'binary'>('unit');
   const [editingHabitId, setEditingHabitId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -93,6 +94,7 @@ export default function HabitsPage() {
         unit: newUnit.trim() || 'times',
         max: newMax || 10,
         color: newColor,
+        habitType: newHabitType,
       } : h);
       saveHabitList(newList);
     } else {
@@ -104,6 +106,7 @@ export default function HabitsPage() {
         unit: newUnit.trim() || 'times',
         max: newMax || 10,
         color: newColor,
+        habitType: newHabitType,
       }];
       saveHabitList(newList);
     }
@@ -111,7 +114,7 @@ export default function HabitsPage() {
     setShowAddModal(false);
     setEditingHabitId(null);
     setNewLabel(''); setNewUnit(''); setNewMax(10);
-    setNewIconName('Star'); setNewColor('var(--pink-400)');
+    setNewIconName('Star'); setNewColor('var(--pink-400)'); setNewHabitType('unit');
   };
 
   const handleEditHabit = (habit: typeof DEFAULT_HABITS[0]) => {
@@ -121,6 +124,7 @@ export default function HabitsPage() {
     setNewMax(habit.max);
     setNewIconName(habit.iconName);
     setNewColor(habit.color);
+    setNewHabitType((habit as any).habitType || 'unit');
     setShowAddModal(true);
   };
 
@@ -302,13 +306,16 @@ export default function HabitsPage() {
                         </div>
                         <div>
                           <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--neutral-700)' }}>{habit.label}</h3>
-                          {todayEntry ? (
-                            <span style={{ fontSize: 12, color: habit.color, fontWeight: 500 }}>
-                              {todayEntry.value} {habit.unit} today ✓
-                            </span>
-                          ) : (
-                            <span style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Not tracked yet today</span>
-                          )}
+                          {/* Status text */}
+                      {todayEntry ? (
+                        <span style={{ fontSize: 12, color: habit.color, fontWeight: 500 }}>
+                          {(habit as any).habitType === 'binary'
+                            ? '✓ Done today'
+                            : `${todayEntry.value} ${habit.unit} today ✓`}
+                        </span>
+                      ) : (
+                        <span style={{ fontSize: 12, color: 'var(--neutral-400)' }}>Not tracked yet today</span>
+                      )}
                         </div>
                       </div>
 
@@ -343,15 +350,48 @@ export default function HabitsPage() {
 
                     {isEditing && !isManageMode && (
                       <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                          <span style={{ fontSize: 12, color: 'var(--neutral-500)' }}>{habitValue} {habit.unit}</span>
-                          <span style={{ fontSize: 12, color: 'var(--neutral-400)' }}>max: {habit.max}</span>
-                        </div>
-                        <input type="range" min="0" max={habit.max} value={habitValue} onChange={e => setHabitValue(Number(e.target.value))} style={{ width: '100%', marginBottom: 12 }} />
-                        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-                          <button className="btn-ghost" onClick={() => { setHabitValue(0); handleSaveHabitValue(habit.type); }} style={{ fontSize: 13, color: 'var(--pink-500)' }}>Clear</button>
-                          <button className="btn-primary" onClick={() => handleSaveHabitValue(habit.type)} style={{ fontSize: 13, padding: '8px 16px' }}>Save</button>
-                        </div>
+                        {(habit as any).habitType === 'binary' ? (
+                          // Binary: Yes / No buttons
+                          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                            <button
+                              className="btn-primary"
+                              onClick={async () => {
+                                const existing = todayHabits?.find(h => h.type === habit.type);
+                                if (existing?.id) await db.habits.delete(existing.id);
+                                vibrate(20);
+                                await db.habits.add({ type: habit.type as any, value: 1, timestamp: new Date() });
+                                setAddingHabit(null);
+                              }}
+                              style={{ flex: 1, padding: '10px', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                            >
+                              <Check size={16} /> Yes, Done!
+                            </button>
+                            <button
+                              className="btn-ghost"
+                              onClick={async () => {
+                                const existing = todayHabits?.find(h => h.type === habit.type);
+                                if (existing?.id) await db.habits.delete(existing.id);
+                                setAddingHabit(null);
+                              }}
+                              style={{ flex: 1, padding: '10px', fontSize: 14, color: 'var(--neutral-500)' }}
+                            >
+                              Not today
+                            </button>
+                          </div>
+                        ) : (
+                          // Unit: slider
+                          <>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                              <span style={{ fontSize: 12, color: 'var(--neutral-500)' }}>{habitValue} {habit.unit}</span>
+                              <span style={{ fontSize: 12, color: 'var(--neutral-400)' }}>max: {habit.max}</span>
+                            </div>
+                            <input type="range" min="0" max={habit.max} value={habitValue} onChange={e => setHabitValue(Number(e.target.value))} style={{ width: '100%', marginBottom: 12 }} />
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                              <button className="btn-ghost" onClick={() => { setHabitValue(0); handleSaveHabitValue(habit.type); }} style={{ fontSize: 13, color: 'var(--pink-500)' }}>Clear</button>
+                              <button className="btn-primary" onClick={() => handleSaveHabitValue(habit.type)} style={{ fontSize: 13, padding: '8px 16px' }}>Save</button>
+                            </div>
+                          </>
+                        )}
                       </motion.div>
                     )}
                   </motion.div>
@@ -492,14 +532,48 @@ export default function HabitsPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Task Type Toggle */}
                   <div>
-                    <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Unit</label>
-                    <input type="text" className="input" placeholder="e.g. pages, mins, times" value={newUnit} onChange={e => setNewUnit(e.target.value)} />
+                    <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 8, display: 'block' }}>Tracking Type</label>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {(['unit', 'binary'] as const).map(t => (
+                        <button
+                          key={t}
+                          onClick={() => setNewHabitType(t)}
+                          style={{
+                            flex: 1, padding: '10px 12px',
+                            borderRadius: 'var(--radius-md)',
+                            border: newHabitType === t ? '2px solid var(--pink-300)' : '1.5px solid var(--neutral-200)',
+                            background: newHabitType === t ? 'var(--pink-100)' : 'transparent',
+                            cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                            color: newHabitType === t ? 'var(--pink-500)' : 'var(--neutral-500)',
+                            fontFamily: 'var(--font-body)',
+                          }}
+                        >
+                          {t === 'unit' ? '📊 By Amount' : '✅ Yes / No'}
+                        </button>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 11, color: 'var(--neutral-400)', marginTop: 6 }}>
+                      {newHabitType === 'binary'
+                        ? 'Simple done/not-done tracking — great for habits that don\'t need counting.'
+                        : 'Track by quantity — logs a number each day.'}
+                    </p>
                   </div>
-                  <div>
-                    <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Daily Goal (Max)</label>
-                    <input type="number" className="input" value={newMax} onChange={e => setNewMax(Number(e.target.value))} />
-                  </div>
+
+                  {newHabitType === 'unit' && (
+                    <>
+                      <div>
+                        <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Unit</label>
+                        <input type="text" className="input" placeholder="e.g. pages, mins, times" value={newUnit} onChange={e => setNewUnit(e.target.value)} />
+                      </div>
+                      <div>
+                        <label style={{ fontSize: 12, color: 'var(--neutral-500)', marginBottom: 4, display: 'block' }}>Daily Goal (Max)</label>
+                        <input type="number" className="input" value={newMax} onChange={e => setNewMax(Number(e.target.value))} />
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>

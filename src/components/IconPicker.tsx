@@ -144,19 +144,19 @@ export default function IconPicker({ selected, onChange, color = 'var(--pink-400
           <div style={{
             position: 'fixed', inset: 0, zIndex: 9999,
             background: 'rgba(0,0,0,0.6)',
-            display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+            display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
           }} onClick={() => setOpen(false)}>
-            <motion.div
-              initial={{ y: '100%' }}
+          <motion.div
+              initial={{ y: '-100%' }}
               animate={{ y: 0 }}
-              exit={{ y: '100%' }}
+              exit={{ y: '-100%' }}
               transition={{ type: 'spring', damping: 28, stiffness: 300 }}
               onClick={e => e.stopPropagation()}
               style={{
                 width: '100%', maxWidth: 480,
-                maxHeight: '75vh',
+                maxHeight: '80vh',
                 background: 'var(--cream-50)',
-                borderRadius: '20px 20px 0 0',
+                borderRadius: '0 0 20px 20px',
                 overflow: 'hidden',
                 display: 'flex', flexDirection: 'column',
               }}
@@ -200,7 +200,7 @@ export default function IconPicker({ selected, onChange, color = 'var(--pink-400
               </div>
 
               {/* Icon Grid */}
-              <div style={{ overflow: 'auto', padding: '0 20px 24px', flex: 1 }}>
+              <div style={{ overflow: 'auto', padding: '0 20px 96px', flex: 1 }}>
                 {Object.entries(filteredCategories).map(([cat, names]) => (
                   <div key={cat} style={{ marginBottom: 16 }}>
                     <p style={{

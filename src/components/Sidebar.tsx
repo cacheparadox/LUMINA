@@ -9,7 +9,7 @@ import {
   Menu, X, Feather, Image as ImageIcon, ListChecks,
   Palette, Rewind, Wind, ChevronLeft, ChevronRight
 } from 'lucide-react';
-import NotificationBell from './NotificationBell';
+
 
 const NAV_ITEMS = [
   { href: '/', label: 'Journal', icon: BookOpen },
@@ -69,12 +69,9 @@ export default function Sidebar({ collapsed, onToggle }: { collapsed?: boolean; 
             )}
           </div>
           {!collapsed && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-              <p style={{ fontSize: 11, color: 'var(--neutral-400)', paddingLeft: 46, fontStyle: 'italic' }}>
-                your emotional OS
-              </p>
-              <NotificationBell />
-            </div>
+            <p style={{ fontSize: 11, color: 'var(--neutral-400)', paddingLeft: 46, fontStyle: 'italic', marginTop: 6 }}>
+              your emotional OS
+            </p>
           )}
         </div>
 

@@ -269,24 +269,7 @@ function NewEntryForm() {
         }
       }
 
-      // Asynchronously update Supabase for daily reminder cron job (Zero UI lag)
-      getSetting('ntfy_reminder_topic').then(async (topic) => {
-        if (topic) {
-          try {
-            const { supabase } = await import('@/lib/supabase');
-            // We use the browser's local date format yyyy-mm-dd
-            const localDateStr = new Date().toLocaleDateString('en-CA'); 
-            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            
-            await supabase.from('lumina_devices').upsert(
-              { ntfy_topic: topic, last_entry_date: localDateStr, timezone: tz },
-              { onConflict: 'ntfy_topic' }
-            );
-          } catch (e) {
-            console.error('Failed to update push reminder date in Supabase:', e);
-          }
-        }
-      });
+
 
       // Show mood quote instead of navigating immediately
       const quotes = MOOD_QUOTES[mood as keyof typeof MOOD_QUOTES] || MOOD_QUOTES[3];

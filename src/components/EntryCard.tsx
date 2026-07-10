@@ -49,6 +49,11 @@ export default function EntryCard({ entry, onClick, index = 0 }: EntryCardProps)
               fontWeight: 600,
               color: 'var(--neutral-700)',
               lineHeight: 1.3,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+              wordBreak: 'break-word',
             }}>
               {entry.title || 'Untitled Entry'}
             </h3>

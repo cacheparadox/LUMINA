@@ -7,7 +7,7 @@ import { db } from '@/lib/db';
 import AppShell from '@/components/AppShell';
 import MoodHeatmap from '@/components/MoodHeatmap';
 import { MOOD_CONFIG } from '@/lib/utils';
-import { BarChart3, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Sparkles, TrendingUp, TrendingDown, Minus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, subMonths, addMonths, subDays, startOfDay, isSameDay } from 'date-fns';
 
 export default function MoodPage() {
@@ -111,7 +111,7 @@ export default function MoodPage() {
       <div className="page-enter">
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
           <h1 style={{ fontSize: 28, fontWeight: 700, color: 'var(--neutral-700)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <BarChart3 size={24} style={{ color: 'var(--pink-300)' }} />
+            <Sparkles size={24} style={{ color: 'var(--pink-300)' }} />
             Mood Insights
           </h1>
           <p style={{ fontSize: 14, color: 'var(--neutral-400)', marginBottom: 28 }}>
@@ -144,7 +144,7 @@ export default function MoodPage() {
           ))}
         </div>
 
-        {/* Weekly Bar Chart */}
+        {/* Weekly Mood Timeline */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -155,29 +155,68 @@ export default function MoodPage() {
           <h3 style={{ fontSize: 14, fontWeight: 600, color: 'var(--neutral-600)', marginBottom: 20 }}>
             This Week
           </h3>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', height: 120, gap: 8 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
             {weekDays.map(day => {
-              const height = day.mood > 0 ? (day.mood / 5) * 100 : 4;
               const moodKey = Math.round(day.mood) as keyof typeof MOOD_CONFIG;
-              const color = day.mood > 0 ? (MOOD_CONFIG[moodKey]?.color || 'var(--neutral-200)') : 'var(--neutral-200)';
+              const config = day.mood > 0 ? MOOD_CONFIG[moodKey] : null;
+              const isToday = day.label === format(new Date(), 'EEE');
               return (
-                <div key={day.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                  <motion.div
-                    initial={{ height: 0 }}
-                    animate={{ height: `${height}%` }}
-                    transition={{ delay: 0.3, duration: 0.6, ease: [0.4, 0, 0.2, 1] }}
-                    style={{
-                      width: '100%',
-                      maxWidth: 36,
-                      background: `linear-gradient(180deg, ${color}, ${color}60)`,
-                      borderRadius: 'var(--radius-sm)',
-                      minHeight: 4,
-                    }}
-                    title={`${day.mood.toFixed(1)} avg mood, ${day.count} entries`}
-                  />
-                  <span style={{ fontSize: 11, color: 'var(--neutral-400)', fontWeight: 500 }}>
+                <div
+                  key={day.date}
+                  style={{
+                    flex: 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  {/* Day Label */}
+                  <span style={{
+                    fontSize: 10,
+                    fontWeight: isToday ? 700 : 500,
+                    color: isToday ? 'var(--pink-400)' : 'var(--neutral-400)',
+                    textTransform: 'uppercase',
+                    letterSpacing: 0.5,
+                  }}>
                     {day.label}
                   </span>
+
+                  {/* Mood Bubble */}
+                  <motion.div
+                    initial={{ scale: 0, opacity: 0 }}
+                    animate={{ scale: 1, opacity: 1 }}
+                    transition={{ delay: 0.3 + weekDays.indexOf(day) * 0.06, type: 'spring', stiffness: 300 }}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: '50%',
+                      background: config ? `${config.color}20` : 'var(--neutral-100)',
+                      border: isToday
+                        ? `2px solid ${config ? config.color : 'var(--neutral-300)'}`
+                        : `1.5px solid ${config ? config.color + '40' : 'var(--neutral-200)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: config ? 22 : 16,
+                      boxShadow: config && isToday ? `0 0 12px ${config.color}40` : 'none',
+                      transition: 'all 0.3s',
+                    }}
+                    title={config ? `${config.label} — ${day.count} ${day.count === 1 ? 'entry' : 'entries'}` : 'No entries'}
+                  >
+                    {config ? config.emoji : '·'}
+                  </motion.div>
+
+                  {/* Entry count dot */}
+                  {day.count > 0 && (
+                    <span style={{
+                      fontSize: 10,
+                      color: config ? config.color : 'var(--neutral-400)',
+                      fontWeight: 600,
+                    }}>
+                      {day.count}
+                    </span>
+                  )}
                 </div>
               );
             })}
